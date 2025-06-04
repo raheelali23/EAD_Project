@@ -1,4 +1,31 @@
 import mongoose from "mongoose";
+
+const assignmentSchema = new mongoose.Schema({
+  title: String,
+  deadline: Date,
+  fileUrl: String,
+  submissions: [
+    {
+      student: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      submissionUrl: String,
+      submittedAt: Date,
+      grade: Number,
+      feedback: String
+    }
+  ]
+});
+
+const materialSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: String,
+  type: { type: String, enum: ['video', 'document', 'link'] },
+  filePath: String,
+  originalFileName: String,
+  mimeType: String,
+  size: Number,
+  uploadedAt: { type: Date, default: Date.now }
+});
+
 const courseSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
