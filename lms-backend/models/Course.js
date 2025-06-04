@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+import mongoose from "mongoose";
 const courseSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
@@ -17,4 +16,4 @@ courseSchema.index({ enrollmentKey: 1 });
 courseSchema.index({ teacher: 1 });
 courseSchema.index({ enrolledStudents: 1 });
 
-module.exports = mongoose.model("Course", courseSchema);
+export default mongoose.model("Course", courseSchema);

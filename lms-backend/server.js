@@ -1,16 +1,20 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const path = require("path");
-const connectDB = require("./config/db");
-
-const authRoutes = require("./routes/auth");
-const courseRoutes = require("./routes/courses");
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";  // <-- import this to get __dirname
+import connectDB from "./config/db.js";
+import authRoutes from "./routes/auth.js";
+import courseRoutes from "./routes/courses.js";
 
 dotenv.config();
 connectDB();
 
 const app = express();
+
+// Get __dirname in ES module scope
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Debug middleware
 app.use((req, res, next) => {

@@ -1,29 +1,22 @@
-const express = require("express");
+import express from "express"
 const router = express.Router();
-const {
+import  {
   getCourses,
   getCourse,
   createCourse,
   updateCourse,
   deleteCourse,
-  addMaterial,
-  removeMaterial,
   enrollInCourse,
   unenrollFromCourse,
   getStudentCourses,
   getCourseDetails,
-  getSubmissions,
-  submitAssignment,
   getEnrolledStudents,
   removeStudentFromCourse,
-  searchCourses,
-  uploadMaterial,
-  createAssignment,
-  downloadMaterial
-} = require("../controllers/courseController");
-const multer = require("multer");
-const path = require("path");
-const auth = require("../middleware/auth");
+  searchCourses
+} from "../controllers/courseController.js"
+import multer from "multer"
+import path from "path"
+import auth from  "../middleware/auth.js"
 
 // Debug middleware for this router
 router.use((req, res, next) => {
@@ -56,12 +49,12 @@ router.get("/", getCourses);
 router.post("/", auth, createCourse);
 router.delete("/:id", auth, deleteCourse);
 router.put("/:id", auth, updateCourse);
-router.post("/:id/materials", auth, upload.single("file"), addMaterial);
-router.delete("/:id/materials/:materialId", auth, removeMaterial);
-router.get("/:id/materials/:materialId/download", auth, downloadMaterial);
-router.post("/:id/assignments", auth, createAssignment);
-router.get("/:id/assignments/:assignmentTitle/submissions", auth, getSubmissions);
-router.post("/:id/assignments/:assignmentTitle/submit", auth, submitAssignment);
+// router.post("/:id/materials", auth, upload.single("file"), addMaterial);
+// router.delete("/:id/materials/:materialId", auth, removeMaterial);
+// router.get("/:id/materials/:materialId/download", auth, downloadMaterial);
+// router.post("/:id/assignments", auth, createAssignment);
+// router.get("/:id/assignments/:assignmentTitle/submissions", auth, getSubmissions);
+// router.post("/:id/assignments/:assignmentTitle/submit", auth, submitAssignment);
 router.get("/:id/students", auth, getEnrolledStudents);
 router.delete("/:id/students/:studentId", auth, removeStudentFromCourse);
 
@@ -78,4 +71,4 @@ router.get("/:id", getCourse);
 router.post('/:courseId/enroll', auth, enrollInCourse);
 router.get('/student', auth, getStudentCourses); 
 
-module.exports = router;
+export default router;

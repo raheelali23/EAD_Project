@@ -1,7 +1,7 @@
-import User from "../models/User";
+import User from "../models/User.js";
 import fs from 'fs';
 import path from 'path';
-import Course from "../models/Course";
+import Course from "../models/Course.js";
 
 // Get all courses
 const getCourses = async (req, res) => {
@@ -272,7 +272,7 @@ const searchCourses = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   getCourses,
   getCourse,
   createCourse,

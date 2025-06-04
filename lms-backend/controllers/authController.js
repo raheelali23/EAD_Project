@@ -1,8 +1,8 @@
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+import User from "../models/User.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-exports.registerUser = async (req, res) => {
+const registerUser = async (req, res) => {
   const { name, email, password, role } = req.body;
 
   try {
@@ -16,11 +16,12 @@ exports.registerUser = async (req, res) => {
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-exports.loginUser = async (req, res) => {
+const loginUser = async (req, res) => {
   const { email, password, role } = req.body;
 
   try {
@@ -36,6 +37,12 @@ exports.loginUser = async (req, res) => {
 
     res.json({ token, user: { id: user._id, name: user.name, role: user.role } });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+export {
+  registerUser,
+  loginUser
 };
