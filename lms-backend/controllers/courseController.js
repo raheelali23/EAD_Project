@@ -1,10 +1,72 @@
+import Course from "../models/Course.js";
 import User from "../models/User.js";
 import fs from 'fs';
 import path from 'path';
-import Course from "../models/Course.js";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Get submissions for an assignment
+export const getSubmissions = async (req, res) => {
+  try {
+  const { courseId, assignmentTitle } = req.params;
+
+    const course = await Course.findById(courseId)
+      .populate("assignments.submissions.student", "name email");
+    
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+  const assignment = course.assignments.find(a => a.title === assignmentTitle);
+    if (!assignment) {
+      return res.status(404).json({ message: "Assignment not found" });
+    }
+
+  res.json(assignment.submissions);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Submit assignment
+export const submitAssignment = async (req, res) => {
+  try {
+  const { courseId } = req.params;
+  const { studentId, assignmentTitle, submissionUrl } = req.body;
+
+  const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+  const assignment = course.assignments.find(a => a.title === assignmentTitle);
+    if (!assignment) {
+      return res.status(404).json({ message: "Assignment not found" });
+    }
+
+    // Check if student is already enrolled
+    if (!course.enrolledStudents.includes(studentId)) {
+      return res.status(403).json({ message: "Student is not enrolled in this course" });
+    }
+
+    // Add submission
+  assignment.submissions.push({
+    student: studentId,
+    submissionUrl,
+    submittedAt: new Date()
+  });
+
+  await course.save();
+    res.json({ message: "Submission saved successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 // Get all courses
-const getCourses = async (req, res) => {
+export const getCourses = async (req, res) => {
   try {
     const courses = await Course.find()
       .populate('teacher', 'name email')
@@ -16,7 +78,7 @@ const getCourses = async (req, res) => {
 };
 
 // Get single course
-const getCourse = async (req, res) => {
+export const getCourse = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id)
       .populate('teacher', 'name email')
@@ -32,7 +94,7 @@ const getCourse = async (req, res) => {
   }
 };
 // Get course details
-const getCourseDetails = async (req, res) => {
+export const getCourseDetails = async (req, res) => {
   try {
   const course = await Course.findById(req.params.id)
       .populate("teacher", "name email")
@@ -50,7 +112,7 @@ const getCourseDetails = async (req, res) => {
 };
 
 // Create course
-const createCourse = async (req, res) => {
+export const createCourse = async (req, res) => {
   try {
     const { title, description, enrollmentKey } = req.body;
     
@@ -79,7 +141,7 @@ const createCourse = async (req, res) => {
 };
 
 // Update course
-const updateCourse = async (req, res) => {
+export const updateCourse = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
     
@@ -104,7 +166,7 @@ const updateCourse = async (req, res) => {
 };
 
 // Delete course
-const deleteCourse = async (req, res) => {
+export const deleteCourse = async (req, res) => {
   try {
     const course = await Course.findById(req.params.id);
     
@@ -146,7 +208,7 @@ const deleteCourse = async (req, res) => {
 
 
 
-const enrollInCourse = async (req, res) => {
+export const enrollInCourse = async (req, res) => {
   const studentId = req.user.id;
   const courseId = req.params.id;
   const { enrollmentKey } = req.body; 
@@ -185,7 +247,7 @@ const enrollInCourse = async (req, res) => {
 };
 
 // Unenroll from course
-const unenrollFromCourse = async (req, res) => {
+export const unenrollFromCourse = async (req, res) => {
   try {
     // Get the student ID directly from req.user, which is populated by the auth middleware
     const studentId = req.user.id;  
@@ -220,7 +282,7 @@ const unenrollFromCourse = async (req, res) => {
 
 
 // Get courses for a student
-const getStudentCourses = async (req, res) => {
+export const getStudentCourses = async (req, res) => {
   try {
     const userId = req.params.userId;
 
@@ -244,13 +306,13 @@ const getStudentCourses = async (req, res) => {
 
 
 // Get enrolled students for teacher
-const getEnrolledStudents = async (req, res) => {
+export const getEnrolledStudents = async (req, res) => {
   const course = await Course.findById(req.params.id).populate("enrolledStudents", "name email");
   res.json(course.enrolledStudents);
 };
 
 // Remove student from course (teacher)
-const removeStudentFromCourse = async (req, res) => {
+export const removeStudentFromCourse = async (req, res) => {
   const { id } = req.params; // courseId
   const { studentId } = req.body;
 
@@ -260,7 +322,7 @@ const removeStudentFromCourse = async (req, res) => {
   res.json({ message: "Student removed from course" });
 };
 
-const searchCourses = async (req, res) => {
+export const searchCourses = async (req, res) => {
   try {
     const query = req.query.q || "";
     const courses = await Course.find({ title: { $regex: query, $options: "i" } })
@@ -272,17 +334,132 @@ const searchCourses = async (req, res) => {
   }
 };
 
-export {
-  getCourses,
-  getCourse,
-  createCourse,
-  updateCourse,
-  deleteCourse,
-  enrollInCourse,
-  unenrollFromCourse,
-  getStudentCourses,
-  getCourseDetails,
-  getEnrolledStudents,
-  removeStudentFromCourse,
-  searchCourses,
+// Remove material from course
+export const removeMaterial = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (course.teacher.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to remove materials from this course' });
+    }
+
+    const material = course.materials.id(req.params.materialId);
+    if (!material) {
+      return res.status(404).json({ message: 'Material not found' });
+    }
+
+    // Delete file if exists
+    if (material.filePath) {
+      const filePath = path.join(__dirname, '..', material.filePath);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    material.remove();
+    await course.save();
+
+    res.json({ message: 'Material removed successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// Add material to course
+export const addMaterial = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (course.teacher.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to add materials to this course' });
+    }
+
+    const { title, description, type } = req.body;
+    const material = {
+      title,
+      description,
+      type,
+      filePath: req.file ? `/uploads/${req.file.filename}` : null
+    };
+
+    course.materials.push(material);
+    await course.save();
+
+    res.status(201).json(material);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+// Create assignment
+export const createAssignment = async (req, res) => {
+  const { id } = req.params;
+  const { title, deadline, fileUrl } = req.body;
+
+  const assignment = { title, deadline, fileUrl };
+  const course = await Course.findByIdAndUpdate(id, { $push: { assignments: assignment } }, { new: true });
+  res.json(course);
+};
+
+// Upload material (slide links or URLs)
+export const uploadMaterial = async (req, res) => {
+  const { id } = req.params;
+  const { material } = req.body; // e.g., slide URL
+  const course = await Course.findByIdAndUpdate(id, { $push: { materials: material } }, { new: true });
+  res.json(course);
+};
+
+// Download material
+export const downloadMaterial = async (req, res) => {
+  try {
+    const { courseId, materialId } = req.params;
+    
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    // Check if user is either teacher or enrolled student
+    const isTeacher = course.teacher.toString() === req.user.id;
+    const isEnrolled = course.enrolledStudents.includes(req.user.id);
+    
+    if (!isTeacher && !isEnrolled) {
+      return res.status(403).json({ message: 'Not authorized to access this material' });
+    }
+
+    const material = course.materials.id(materialId);
+    if (!material) {
+      return res.status(404).json({ message: 'Material not found' });
+    }
+
+    if (!material.filePath) {
+      return res.status(400).json({ message: 'No file associated with this material' });
+    }
+
+    const filePath = path.join(__dirname, '..', material.filePath);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    // Set appropriate headers
+    res.setHeader('Content-Type', material.mimeType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${material.originalFileName}"`);
+
+    // Stream the file
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error('Error downloading material:', error);
+    res.status(500).json({ message: error.message });
+  }
 };
