@@ -81,25 +81,27 @@ export default function ViewCourse() {
           <h3>Materials</h3>
           {course.materials && course.materials.length > 0 ? (
             <ul>
-              {course.materials.map((m, i) => (
-                <li key={i}>
-                  {m.title} - {m.description || "No description"}
-                  {m.filePath && (
-                    <>
-                      {" "}
-                      —{" "}
-                      <a
-                        href={`${API_BASE}${m.filePath}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-decoration-none"
-                      >
-                        Download
-                      </a>
-                    </>
-                  )}
-                </li>
-              ))}
+{course.materials.map((m, i) => (
+  <li key={i}>
+    {m.title} - {m.description || "No description"}
+    {m.filePath && (
+      <>
+        {" "}
+        —
+        {console.log("Download path:", `${API_BASE}${m.filePath}`)}  {/* 🔍 LOG */}
+        <a
+          href={`http://localhost:5000${m.filePath}`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-decoration-none"
+        >
+          Download
+        </a>
+      </>
+    )}
+  </li>
+))}
+
             </ul>
           ) : (
             <p>No materials available.</p>
