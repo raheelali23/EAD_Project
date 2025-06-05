@@ -90,13 +90,13 @@ export default function ViewCourse() {
         —
         {console.log("Download path:", `${API_BASE}${m.filePath}`)}  {/* 🔍 LOG */}
         <a
-          href={`http://localhost:5000${m.filePath}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-decoration-none"
-        >
-          Download
-        </a>
+  href={`http://localhost:5000/api/uploads/${m.filePath.split("/").pop()}`}
+  download
+  className="text-decoration-none"
+>
+  Download
+</a>
+
       </>
     )}
   </li>
