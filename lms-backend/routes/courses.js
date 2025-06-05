@@ -34,7 +34,10 @@ const storage = multer.diskStorage({
     cb(null, "uploads/");
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname);
+    const ext = path.extname(file.originalname); // get ".docx"
+    const baseName = path.basename(file.originalname, ext); // clean base name
+    const uniqueName = `${Date.now()}-${baseName}${ext}`;
+    cb(null, uniqueName);
   },
 });
 
