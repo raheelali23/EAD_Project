@@ -403,12 +403,40 @@ export const addMaterial = async (req, res) => {
 
 // Create assignment
 export const createAssignment = async (req, res) => {
-  const { id } = req.params;
-  const { title, deadline, fileUrl } = req.body;
+  try {
+    const { id } = req.params;
+    
+    // Log the request body and file for debugging
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
 
-  const assignment = { title, deadline, fileUrl };
-  const course = await Course.findByIdAndUpdate(id, { $push: { assignments: assignment } }, { new: true });
-  res.json(course);
+    if (!req.body.title || !req.body.deadline) {
+      return res.status(400).json({ message: 'Title and deadline are required' });
+    }
+
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    if (course.teacher.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to add assignments to this course' });
+    }
+
+    const assignment = {
+      title: req.body.title,
+      deadline: new Date(req.body.deadline),
+      fileUrl: req.file ? `/uploads/${req.file.filename}` : null
+    };
+
+    course.assignments.push(assignment);
+    await course.save();
+
+    res.status(201).json(assignment);
+  } catch (error) {
+    console.error('Error creating assignment:', error);
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // Upload material (slide links or URLs)
@@ -460,6 +488,45 @@ export const downloadMaterial = async (req, res) => {
     fileStream.pipe(res);
   } catch (error) {
     console.error('Error downloading material:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Download assignment file
+export const downloadAssignment = async (req, res) => {
+  try {
+    const { id, assignmentId } = req.params;
+    
+    const course = await Course.findById(id);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found' });
+    }
+
+    const assignment = course.assignments.id(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ message: 'Assignment not found' });
+    }
+
+    if (!assignment.fileUrl) {
+      return res.status(404).json({ message: 'No file attached to this assignment' });
+    }
+
+    const filePath = path.join(process.cwd(), assignment.fileUrl);
+    
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    // Set headers for file download
+    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(filePath)}`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+
+    // Stream the file to the response
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error('Error downloading assignment:', error);
     res.status(500).json({ message: error.message });
   }
 };
