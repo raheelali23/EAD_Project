@@ -114,27 +114,18 @@ export const getCourseDetails = async (req, res) => {
 // Create course
 export const createCourse = async (req, res) => {
   try {
-    const { title, description, enrollmentKey } = req.body;
-    
-    if (!title || !enrollmentKey) {
-      return res.status(400).json({ message: 'Title and enrollment key are required' });
-    }
-
-    // Check if enrollment key already exists
-    const existingCourse = await Course.findOne({ enrollmentKey });
-    if (existingCourse) {
-      return res.status(400).json({ message: 'Enrollment key already exists' });
-    }
+    const { title, description } = req.body;
+    const teacherId = req.user.id;
 
     const course = new Course({
       title,
       description,
-      enrollmentKey,
-      teacher: req.user.id
+      teacher: teacherId,
+      enrollmentKey: Math.random().toString(36).substring(2, 8).toUpperCase()
     });
 
-    const savedCourse = await course.save();
-    res.status(201).json(savedCourse);
+    await course.save();
+    res.status(201).json(course);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -143,23 +134,22 @@ export const createCourse = async (req, res) => {
 // Update course
 export const updateCourse = async (req, res) => {
   try {
+    const { title, description } = req.body;
     const course = await Course.findById(req.params.id);
     
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-
+    
     if (course.teacher.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to update this course' });
     }
-
-    const updatedCourse = await Course.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-
-    res.json(updatedCourse);
+    
+    course.title = title || course.title;
+    course.description = description || course.description;
+    
+    await course.save();
+    res.json(course);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -173,40 +163,17 @@ export const deleteCourse = async (req, res) => {
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-
+    
     if (course.teacher.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to delete this course' });
     }
-
-    // Remove course from enrolled students
-    await User.updateMany(
-      { enrolledCourses: req.params.id },
-      { $pull: { enrolledCourses: req.params.id } }
-    );
-
-    // Delete course materials
-    if (course.materials && course.materials.length > 0) {
-      course.materials.forEach(material => {
-        if (material.filePath) {
-          const filePath = path.join(__dirname, '..', material.filePath);
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-          }
-        }
-      });
-    }
-
-    // Delete the course
-    await Course.findByIdAndDelete(req.params.id);
     
+    await course.remove();
     res.json({ message: 'Course deleted successfully' });
   } catch (error) {
-    console.error('Error deleting course:', error);
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 export const enrollInCourse = async (req, res) => {
   const studentId = req.user.id;
@@ -373,6 +340,7 @@ export const removeMaterial = async (req, res) => {
 // Add material to course
 export const addMaterial = async (req, res) => {
   try {
+    const { title, description, type } = req.body;
     const course = await Course.findById(req.params.id);
     
     if (!course) {
@@ -383,12 +351,16 @@ export const addMaterial = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to add materials to this course' });
     }
 
-    const { title, description, type } = req.body;
+    let fileUrl = null;
+    if (req.file) {
+      fileUrl = `/uploads/${req.file.filename}`;
+    }
+    
     const material = {
       title,
       description,
       type,
-      filePath: req.file ? `/uploads/${req.file.filename}` : null
+      fileUrl
     };
 
     course.materials.push(material);
@@ -404,37 +376,38 @@ export const addMaterial = async (req, res) => {
 // Create assignment
 export const createAssignment = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { title, deadline } = req.body;
     
-    // Log the request body and file for debugging
-    console.log('Request body:', req.body);
-    console.log('Request file:', req.file);
-
-    if (!req.body.title || !req.body.deadline) {
+    if (!title || !deadline) {
       return res.status(400).json({ message: 'Title and deadline are required' });
     }
-
-    const course = await Course.findById(id);
+    
+    const course = await Course.findById(req.params.id);
+    
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-
+    
     if (course.teacher.toString() !== req.user.id) {
       return res.status(403).json({ message: 'Not authorized to add assignments to this course' });
     }
-
+    
+    let fileUrl = null;
+    if (req.file) {
+      fileUrl = `/uploads/${req.file.filename}`;
+    }
+    
     const assignment = {
-      title: req.body.title,
-      deadline: new Date(req.body.deadline),
-      fileUrl: req.file ? `/uploads/${req.file.filename}` : null
+      title,
+      deadline,
+      fileUrl
     };
-
+    
     course.assignments.push(assignment);
     await course.save();
-
+    
     res.status(201).json(assignment);
   } catch (error) {
-    console.error('Error creating assignment:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -496,37 +469,34 @@ export const downloadMaterial = async (req, res) => {
 export const downloadAssignment = async (req, res) => {
   try {
     const { id, assignmentId } = req.params;
-    
     const course = await Course.findById(id);
+    
     if (!course) {
       return res.status(404).json({ message: 'Course not found' });
     }
-
+    
     const assignment = course.assignments.id(assignmentId);
+    
     if (!assignment) {
       return res.status(404).json({ message: 'Assignment not found' });
     }
-
+    
     if (!assignment.fileUrl) {
       return res.status(404).json({ message: 'No file attached to this assignment' });
     }
-
+    
     const filePath = path.join(process.cwd(), assignment.fileUrl);
     
-    // Check if file exists
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ message: 'File not found' });
     }
-
-    // Set headers for file download
-    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(filePath)}`);
+    
+    res.setHeader('Content-Disposition', `attachment; filename=${assignment.title}${path.extname(assignment.fileUrl)}`);
     res.setHeader('Content-Type', 'application/octet-stream');
-
-    // Stream the file to the response
+    
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
   } catch (error) {
-    console.error('Error downloading assignment:', error);
     res.status(500).json({ message: error.message });
   }
 };
