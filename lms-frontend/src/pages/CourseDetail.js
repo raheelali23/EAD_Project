@@ -68,6 +68,31 @@ export default function CourseDetail() {
       setSnackbar({ open: true, message: error.message, severity: "danger" });
     }
   };
+  const handleDeleteMaterial = async (materialId) => {
+    try {
+      const res = await fetch(`${API_BASE}/materials/${materialId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Failed to delete material");
+      }
+  
+      setCourse((prev) => ({
+        ...prev,
+        materials: prev.materials.filter((m) => m._id !== materialId),
+      }));
+  
+      setSnackbar({ open: true, message: "Material deleted successfully!", severity: "success" });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: "danger" });
+    }
+  };
+  
 
   const handleAddAssignment = async () => {
     try {
@@ -183,34 +208,51 @@ export default function CourseDetail() {
       </ul>
 
       {tabValue === 'home' && (
-        <div>
-          <div className="d-flex justify-content-end mb-3">
-            <button className="btn btn-light shadow-sm" onClick={() => setOpenMaterialModal(true)}>
-              <i className="bi bi-plus-circle me-1"></i> Add Material
-            </button>
-          </div>
-  
-          <div className="row">
-            {course.materials?.length > 0 ? course.materials.map((material, idx) => (
-              <div className="col-md-4 mb-4" key={idx}>
-                <div className="card h-100 shadow-sm border-0">
-                  <div className="card-body d-flex flex-column">
-                    <div className="d-flex align-items-center justify-content-center bg-light rounded mb-3" style={{ height: '150px' }}>
-                      <i className="bi bi-file-earmark-text" style={{ fontSize: '3rem' }}></i>
-                    </div>
-                    <h5 className="card-title">{material.title}</h5>
-                    <p className="card-text text-muted">{material.description}</p>
-                  </div>
-                </div>
+  <div>
+    <div className="d-flex justify-content-end mb-3">
+      <button className="btn btn-light shadow-sm" onClick={() => setOpenMaterialModal(true)}>
+        <i className="bi bi-plus-circle me-1"></i> Add Material
+      </button>
+    </div>
+
+    <div className="row">
+      {course.materials?.length > 0 ? course.materials.map((material, idx) => (
+        <div className="col-md-4 mb-4" key={idx}>
+          <div className="card h-100 shadow-sm border-0">
+            <div className="card-body d-flex flex-column">
+              <div className="d-flex align-items-center justify-content-center bg-light rounded mb-3" style={{ height: '150px' }}>
+                <i className="bi bi-file-earmark-text" style={{ fontSize: '3rem' }}></i>
               </div>
-            )) : (
-              <div className="col-12">
-                <div className="alert alert-info">No materials uploaded yet</div>
+              <h5 className="card-title">{material.title}</h5>
+              <p className="card-text text-muted">{material.description}</p>
+
+              <div className="d-flex justify-content-between mt-auto">
+                <a
+                  href={`http://localhost:5000/api/uploads/${material.filePath?.split('/').pop()}`}
+                  download
+                  className="btn btn-outline-primary btn-sm"
+                >
+                  <i className="bi bi-download me-1"></i> Download
+                </a>
+                <button
+                  className="btn btn-outline-danger btn-sm"
+                  onClick={() => handleDeleteMaterial(material._id)}
+                >
+                  <i className="bi bi-trash me-1"></i> Delete
+                </button>
               </div>
-            )}
+            </div>
           </div>
         </div>
+      )) : (
+        <div className="col-12">
+          <div className="alert alert-info">No materials uploaded yet</div>
+        </div>
       )}
+    </div>
+  </div>
+)}
+
 
       {tabValue === 'assignments' && (
         <div>

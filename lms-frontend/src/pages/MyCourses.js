@@ -9,6 +9,18 @@ export default function MyCourses() {
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
+  // Reuse thumbnail for each course
+  const getPersistentImage = (courseId) => {
+    const totalImages = 4;
+    const key = `course-img-${courseId}`;
+    let imageIndex = localStorage.getItem(key);
+    if (!imageIndex) {
+      imageIndex = Math.floor(Math.random() * totalImages) + 1;
+      localStorage.setItem(key, imageIndex);
+    }
+    return `/images/courses/${imageIndex}.jpg`;
+  };
+
   const loadAll = async () => {
     try {
       const [allCourses, enrolled] = await Promise.all([
@@ -42,7 +54,7 @@ export default function MyCourses() {
       });
       const data = await res.json();
       alert(data.message);
-      loadAll(); // Refresh the course list after unenrollment
+      loadAll();
     } catch {
       alert("Unenroll failed");
     }
@@ -50,42 +62,60 @@ export default function MyCourses() {
 
   return (
     <div className="container py-4">
-      <h2 className="fw-bold mb-4">My Courses</h2>
-
-      {/* Back Button */}
-      <button 
-        onClick={() => navigate("/")}  // Navigate to the home page
-        className="btn btn-secondary mb-4"
-        style={{ backgroundColor: "#6c63ff", color: "white" }}
-      >
-        Back to Home
-      </button>
-
-      {courses.filter((c) => enrolledCourseIds.includes(c._id)).map((course) => (
-        <div key={course._id} className="card shadow-sm border-0 mb-4">
-          <div className="card-body">
-            <h3 className="card-title">{course.title}</h3>
-            <p>{course.description}</p>
-
-            <div className="d-flex gap-2">
-              <button
-                onClick={() => navigate(`/course/${course._id}`)} // Navigate to course detail page
-                className="btn"
-                style={{ backgroundColor: "#6c63ff", color: "white" }}
-              >
-                View Details
-              </button>
-              <button
-                onClick={() => unenroll(course._id)} // Unenroll from course
-                className="btn"
-                style={{ backgroundColor: "#dc3545", color: "white" }}
-              >
-                Unenroll
-              </button>
-            </div>
-          </div>
+      {/* Black Navbar Style */}
+      <nav className="navbar navbar-expand-lg navbar-dark bg-dark rounded shadow-sm mb-4 px-3">
+        <span className="navbar-brand fw-bold fs-4">📚 My Enrolled Courses</span>
+        <div className="ms-auto">
+          <button
+            onClick={() => navigate("/student-dashboard")}
+            className="btn btn-light"
+          >
+            ← Back to Dashboard
+          </button>
         </div>
-      ))}
+      </nav>
+
+      <div className="row">
+        {courses.filter((c) => enrolledCourseIds.includes(c._id)).length === 0 ? (
+          <p className="text-muted">You are not enrolled in any courses yet.</p>
+        ) : (
+          courses
+            .filter((c) => enrolledCourseIds.includes(c._id))
+            .map((course) => (
+              <div key={course._id} className="col-md-4 mb-4">
+                <div className="card h-100 shadow-sm border-0">
+                  <img
+                    src={getPersistentImage(course._id)}
+                    alt="Course"
+                    className="card-img-top"
+                    style={{ height: "160px", objectFit: "cover" }}
+                  />
+                  <div className="card-body d-flex flex-column">
+                    <h5 className="card-title text-dark">{course.title}</h5>
+                    <p className="card-text text-muted" style={{ flexGrow: 1 }}>
+                      {course.description || "No description provided."}
+                    </p>
+                    <p className="small text-secondary">👨‍🏫 {course.teacher?.name || "Unknown Teacher"}</p>
+                    <div className="mt-auto d-flex justify-content-between">
+                      <button
+                        onClick={() => navigate(`/course/${course._id}`)}
+                        className="btn btn-sm btn-dark"
+                      >
+                         View Details
+                      </button>
+                      <button
+                        onClick={() => unenroll(course._id)}
+                        className="btn btn-sm btn-outline-danger"
+                      >
+                         Unenroll
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+        )}
+      </div>
     </div>
   );
 }
