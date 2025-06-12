@@ -45,7 +45,7 @@ export default function CourseDetail() {
       formData.append("description", newMaterial.description);
       formData.append("type", newMaterial.type);
       if (newMaterial.file) formData.append("file", newMaterial.file);
-
+  
       const response = await fetch(`${API_BASE}/courses/${id}/materials`, {
         method: "POST",
         headers: {
@@ -53,14 +53,14 @@ export default function CourseDetail() {
         },
         body: formData
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to add material");
       }
-
-      const data = await response.json();
-      setCourse({ ...course, materials: [...course.materials, data] });
+  
+      const updatedCourse = await response.json();
+      setCourse(updatedCourse);
       setOpenMaterialModal(false);
       setNewMaterial({ title: '', description: '', type: 'document', file: null });
       setSnackbar({ open: true, message: "Material added successfully!", severity: "success" });
@@ -68,9 +68,10 @@ export default function CourseDetail() {
       setSnackbar({ open: true, message: error.message, severity: "danger" });
     }
   };
+  
   const handleDeleteMaterial = async (materialId) => {
     try {
-      const res = await fetch(`${API_BASE}/materials/${materialId}`, {
+      const res = await fetch(`${API_BASE}/courses/${course._id}/materials/${materialId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -92,7 +93,7 @@ export default function CourseDetail() {
       setSnackbar({ open: true, message: error.message, severity: "danger" });
     }
   };
-  
+   
 
   const handleAddAssignment = async () => {
     try {

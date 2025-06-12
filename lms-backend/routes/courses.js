@@ -13,6 +13,7 @@ import {
   createAssignment,
   downloadAssignment,
   searchCourses,
+  removeMaterial,
   getStudentCourses
 } from '../controllers/courseController.js';
 
@@ -28,6 +29,8 @@ router.get('/', auth, getCourses);
 router.get('/:id', auth, getCourse);
 router.put('/:id', auth, updateCourse);
 router.delete('/:id', auth, deleteCourse);
+// Remove material
+router.delete('/:courseId/materials/:materialId', auth, removeMaterial);
 
 // Enrollment routes
 router.post('/:id/enroll', auth, enrollInCourse);

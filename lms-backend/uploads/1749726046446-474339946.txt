@@ -1,0 +1,72 @@
+Gg 3 ¥. Sukkur IBA University
+
+University’ Final Examination
+Practical Exam
+
+Course: Enterprise Application Development Class: BS-VI
+Date: 34 June 2025 Time: 1 Hour
+Instructor: Khalid Hussain Marks: 15 Marks
+Instructions:
+
+e¢ No Mobile Phones are allowed.
+
+e Save your files after any changes.
+
+e Submit a single React component file (not an entire project) and provide the GitHub
+repository link. The link must be pasted directly in the LMS text submission box, not
+inside a text file.
+
+e Once done, submit it in LMS (Section: Part-B).
+
+Part-B (Practical)
+(No Internet, Copilot/ChatGPT, or any AI model/extension is allowed)
+
+Build a single React component that replicates the exact behavior shown in the
+provided GIF demo (attached).
+
+Deliverables:
+
+e Asingle React component file (e.g., TrafficLightSimulator.jsx)
+e AGitHub repository link
+
+Refer to the GIF Demo
+
+Use the provided GIF to observe:
+
+The sequence of light changes (Red > Yellow —> Green > Red...)
+Each light stays active for 3 seconds
+
+Only one light is active at a time
+
+Smooth transitions and style
+
+Requirements
+1. React Component Setup
+
+e Create a file like TrafficLightSimulator.jsx
+¢ Component must be self-contained (all JSX + CSS in one file)
+e Match the design shown in the GIF
+2. Light Logic
+e Use useState to track the current light (red/yellow/green)
+e Use useEffect with setinterval to change light every 3 seconds
+e Apply active CSS class to the current light
+
+3. Styling
+e Match the GIF’s light casing and glow effects
+
+e Red, yellow, and green circles should visibly change
+e Add smooth CSS transitions
+
+Git Commit Plan (Minimum 4 Commits)
+
+Commit # Commit Message Task
+1 Initial commit: add static HTML and CSS Setup project and layout (3
+for traffic light lights, no logic)
+2 Refactor: convert to functional React JSX structure for lights, apply
+component classes
+Feature: implement light cycle logic Cycle lights every 3s using state
+3 :
+with useEffect + effect
+4 Style: enhance UI with transitions and
+
+active styles

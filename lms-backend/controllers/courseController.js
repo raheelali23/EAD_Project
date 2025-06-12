@@ -168,7 +168,7 @@ export const deleteCourse = async (req, res) => {
       return res.status(403).json({ message: 'Not authorized to delete this course' });
     }
     
-    await course.remove();
+    await Course.findByIdAndDelete(req.params.id);
     res.json({ message: 'Course deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -309,34 +309,31 @@ export const searchCourses = async (req, res) => {
 // Remove material from course
 export const removeMaterial = async (req, res) => {
   try {
-    const course = await Course.findById(req.params.id);
-    
-    if (!course) {
-      return res.status(404).json({ message: 'Course not found' });
-    }
+    const { courseId, materialId } = req.params;
 
-    if (course.teacher.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Not authorized to remove materials from this course' });
-    }
+    const course = await Course.findById(courseId);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
 
-    const material = course.materials.id(req.params.materialId);
-    if (!material) {
-      return res.status(404).json({ message: 'Material not found' });
-    }
+    if (course.teacher.toString() !== req.user.id)
+      return res.status(403).json({ message: 'Unauthorized' });
 
-    // Delete file if exists
+    const material = course.materials.id(materialId);
+    if (!material) return res.status(404).json({ message: 'Material not found' });
+
+    // Optional: delete the file from disk
     if (material.filePath) {
-      const filePath = path.join(__dirname, '..', material.filePath);
+      const filePath = path.join(process.cwd(), material.filePath); // adjust as needed
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
     }
 
-    material.remove();
+    material.deleteOne(); 
     await course.save();
 
     res.json({ message: 'Material removed successfully' });
   } catch (error) {
+    console.error('Error removing material:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -365,19 +362,19 @@ export const addMaterial = async (req, res) => {
       title,
       description,
       type,
-      fileUrl
+      filePath: fileUrl
     };
 
     course.materials.push(material);
     await course.save();
 
-    res.status(201).json(material);
+    const updatedCourse = await Course.findById(req.params.id);
+
+    res.status(201).json(updatedCourse);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 // Create assignment
 export const createAssignment = async (req, res) => {
   try {
