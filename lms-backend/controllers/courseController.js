@@ -251,19 +251,15 @@ export const unenrollFromCourse = async (req, res) => {
 // Get courses for a student
 export const getStudentCourses = async (req, res) => {
   try {
-    const userId = req.params.userId;
-
-    const courses = await Course.find({ enrolledStudents: userId });
-
-    // Ensure the result is always an array
-    if (!Array.isArray(courses)) {
-      return res.status(200).json([]);
-    }
-
-    res.status(200).json(courses);
+    const { studentId } = req.params;
+    
+    const courses = await Course.find({ enrolledStudents: studentId })
+      .populate('teacher', 'name email')
+      .populate('enrolledStudents', 'name email');
+    
+    res.json(courses);
   } catch (error) {
-    console.error("Error fetching student courses:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -289,12 +285,21 @@ export const removeStudentFromCourse = async (req, res) => {
   res.json({ message: "Student removed from course" });
 };
 
+// Search courses
 export const searchCourses = async (req, res) => {
   try {
-    const query = req.query.q || "";
-    const courses = await Course.find({ title: { $regex: query, $options: "i" } })
-      .populate("teacher", "name email")              // populate teacher info
-      .populate("enrolledStudents", "name email");    // optionally populate enrolled students
+    const { q } = req.query;
+    const searchQuery = q ? {
+      $or: [
+        { title: { $regex: q, $options: 'i' } },
+        { description: { $regex: q, $options: 'i' } }
+      ]
+    } : {};
+
+    const courses = await Course.find(searchQuery)
+      .populate('teacher', 'name email')
+      .populate('enrolledStudents', 'name email');
+    
     res.json(courses);
   } catch (error) {
     res.status(500).json({ message: error.message });

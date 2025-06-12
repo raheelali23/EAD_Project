@@ -1,27 +1,41 @@
-const express = require('express');
-const router = express.Router();
-const auth = require('../middleware/auth');
-const upload = require('../middleware/upload');
-const {
+import express from 'express';
+import { auth } from '../middleware/auth.js';
+import { upload } from '../middleware/upload.js';
+import {
   createCourse,
   getCourses,
-  getCourseById,
+  getCourse,
   updateCourse,
   deleteCourse,
-  enrollStudent,
+  enrollInCourse,
+  unenrollFromCourse,
   addMaterial,
   createAssignment,
-  downloadAssignment
-} = require('../controllers/courseController');
+  downloadAssignment,
+  searchCourses,
+  getStudentCourses
+} from '../controllers/courseController.js';
 
+const router = express.Router();
+
+// Search and student-specific routes (must come before :id routes)
+router.get('/search', auth, searchCourses);
+router.get('/student/:studentId', auth, getStudentCourses);
+
+// Basic CRUD routes
 router.post('/', auth, createCourse);
 router.get('/', auth, getCourses);
-router.get('/:id', auth, getCourseById);
+router.get('/:id', auth, getCourse);
 router.put('/:id', auth, updateCourse);
 router.delete('/:id', auth, deleteCourse);
-router.post('/:id/enroll', auth, enrollStudent);
+
+// Enrollment routes
+router.post('/:id/enroll', auth, enrollInCourse);
+router.post('/:id/unenroll', auth, unenrollFromCourse);
+
+// Material and assignment routes
 router.post('/:id/materials', auth, upload.single('file'), addMaterial);
 router.post('/:id/assignments', auth, upload.single('file'), createAssignment);
 router.get('/:id/assignments/:assignmentId/download', auth, downloadAssignment);
 
-module.exports = router;
+export default router; 
