@@ -6,7 +6,7 @@ import {
   editSubmission,
   deleteSubmission,
   getSubmissionsByAssignment
-} from '../controllers/assignmentController.js';
+} from '../controllers/assignmentControllers.js';
 
 const router = express.Router();
 

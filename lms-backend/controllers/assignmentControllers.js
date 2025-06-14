@@ -1,5 +1,5 @@
 import { Submission } from '../models/Submission.js';
-import { Course } from '../models/Course.js';
+import Course  from '../models/Course.js';
 
 export const submitAssignment = async (req, res) => {
   try {

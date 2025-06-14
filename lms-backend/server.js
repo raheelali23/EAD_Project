@@ -7,12 +7,13 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import courseRoutes from "./routes/courses.js";
 import assignmentRoutes from './routes/assignments.js';
-app.use('/api/assignments', assignmentRoutes);
 
 dotenv.config();
 connectDB();
 
 const app = express();
+app.use('/api/assignments', assignmentRoutes);
+
 
 
 
