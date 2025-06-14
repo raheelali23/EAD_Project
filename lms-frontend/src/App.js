@@ -7,6 +7,8 @@ import CourseDetail from "./pages/CourseDetail";
 import MyCourses from "./pages/MyCourses";
 import StudentDeadlines from "./pages/StudentDeadlines";
 import ViewCourse from "./pages/viewcourse";  // Correct import
+import AssignmentSubmission from './pages/AssignmentSubmission';
+
 
 function App() {
   return (
@@ -23,6 +25,7 @@ function App() {
         <Route path="/student-dashboard/course/:id" element={<CourseDetail />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/submit/:courseId/:assignmentId" element={<AssignmentSubmission />} />
       </Routes>
     </Router>
   );

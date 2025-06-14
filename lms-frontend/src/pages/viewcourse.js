@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { API_BASE } from "../config";
 
+import { getRemainingTime } from '../utils/timeUtils';
+
 export default function ViewCourse() {
   const { id } = useParams();  // Get the course ID from the URL
   const [course, setCourse] = useState(null);
@@ -116,7 +118,7 @@ export default function ViewCourse() {
 )}
 
 
-      {/* Assignments Tab */}
+      {/* Assignments Tab
       {activeTab === "assignments" && (
         <div>
           <h3>Assignments</h3>
@@ -134,7 +136,38 @@ export default function ViewCourse() {
             <p>No assignments available.</p>
           )}
         </div>
-      )}
+      )} */}
+
+
+
+
+      {activeTab === "assignments" && (
+  <div>
+    <h3>Assignments</h3>
+    {course.assignments && course.assignments.length > 0 ? (
+      <ul className="list-group">
+        {course.assignments.map((a, i) => (
+          <li key={i} className="list-group-item d-flex justify-content-between align-items-start">
+            <div>
+              <strong>{a.title}</strong><br />
+              Deadline: {new Date(a.deadline).toLocaleString()}<br />
+              📥 <a href={a.fileUrl} target="_blank" rel="noreferrer" className="text-decoration-none">Download</a><br />
+              ⏰ <span className="text-muted">{getRemainingTime(a.deadline)}</span>
+            </div>
+            <div>
+              <Link to={`/submit/${course._id}/${a._id}`} className="btn btn-outline-primary btn-sm">
+                {a.submissions?.some(s => s.student === course.loggedInStudentId) ? 'Edit' : 'Submit'}
+              </Link>
+            </div>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p>No assignments available.</p>
+    )}
+  </div>
+)}
+
 
       {/* Participants Tab */}
       {/* Participants Tab */}
