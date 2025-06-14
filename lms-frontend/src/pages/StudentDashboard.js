@@ -15,7 +15,7 @@ export default function StudentDashboard() {
   const token = localStorage.getItem("token");
 
   const getPersistentImage = (courseId) => {
-    const totalImages = 3;
+    const totalImages = 5;
     const key = `course-img-${courseId}`;
     let imageIndex = localStorage.getItem(key);
     if (!imageIndex) {
