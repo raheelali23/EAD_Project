@@ -114,22 +114,27 @@ export const getCourseDetails = async (req, res) => {
 // Create course
 export const createCourse = async (req, res) => {
   try {
-    const { title, description } = req.body;
+    const { title, description, enrollmentKey } = req.body; 
     const teacherId = req.user.id;
 
+    if (!enrollmentKey) {
+      return res.status(400).json({ message: "Enrollment key is required" });
+    }
     const course = new Course({
       title,
       description,
       teacher: teacherId,
-      enrollmentKey: Math.random().toString(36).substring(2, 8).toUpperCase()
+      enrollmentKey
     });
 
     await course.save();
     res.status(201).json(course);
   } catch (error) {
+    console.error("Error in createCourse:", error);
     res.status(500).json({ message: error.message });
   }
 };
+
 
 // Update course
 export const updateCourse = async (req, res) => {
@@ -262,7 +267,6 @@ export const getStudentCourses = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 
 
