@@ -36,7 +36,7 @@ export default function StudentDashboard() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-       console.log("Fetched Courses:", data); // Add this
+       console.log("Fetched Courses:", data); 
       setCourses(Array.isArray(data) ? data : []);
     } catch {
       alert("Error fetching courses");

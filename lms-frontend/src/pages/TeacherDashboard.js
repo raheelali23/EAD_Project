@@ -19,7 +19,6 @@ export default function TeacherDashboard() {
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
 
-  // ✅ Assign persistent image per course
   const getPersistentImage = (courseId) => {
     const totalImages = 5;
     const key = `course-img-${courseId}`;
@@ -220,7 +219,6 @@ export default function TeacherDashboard() {
         ))}
       </div>
 
-      {/* Create Course Modal */}
       {showModal && (
         <div className="modal d-block show" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <div className="modal-dialog">

@@ -19,7 +19,7 @@ import {
 
 const router = express.Router();
 
-// Search and student-specific routes (must come before :id routes)
+// Search and student-specific routes
 router.get('/search', auth, searchCourses);
 router.get('/student/:studentId', auth, getStudentCourses);
 
@@ -29,7 +29,6 @@ router.get('/', auth, getCourses);
 router.get('/:id', auth, getCourse);
 router.put('/:id', auth, updateCourse);
 router.delete('/:id', auth, deleteCourse);
-// Remove material
 router.delete('/:courseId/materials/:materialId', auth, removeMaterial);
 
 // Enrollment routes

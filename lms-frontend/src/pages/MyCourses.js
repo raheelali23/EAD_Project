@@ -62,7 +62,6 @@ export default function MyCourses() {
 
   return (
     <div className="container py-4">
-      {/* Black Navbar Style */}
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark rounded shadow-sm mb-4 px-3">
         <span className="navbar-brand fw-bold fs-4">📚 My Enrolled Courses</span>
         <div className="ms-auto">

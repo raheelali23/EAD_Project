@@ -46,12 +46,10 @@ export const submitAssignment = async (req, res) => {
       return res.status(404).json({ message: "Assignment not found" });
     }
 
-    // Check if student is already enrolled
     if (!course.enrolledStudents.includes(studentId)) {
       return res.status(403).json({ message: "Student is not enrolled in this course" });
     }
 
-    // Add submission
   assignment.submissions.push({
     student: studentId,
     submissionUrl,
@@ -194,21 +192,18 @@ export const enrollInCourse = async (req, res) => {
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ message: "Course not found" });
 
-    // Check if the enrollment key matches
     if (course.enrollmentKey !== enrollmentKey) {
       return res.status(400).json({ message: "Invalid enrollment key" });
     }
 
-    // If student is not already enrolled
     if (!course.enrolledStudents.includes(studentId)) {
       course.enrolledStudents.push(studentId);
       await course.save();
     }
 
-    // Optionally, also update the student's enrolledCourses
     await User.findByIdAndUpdate(
       studentId,
-      { $addToSet: { enrolledCourses: course._id } } // Prevent duplicates
+      { $addToSet: { enrolledCourses: course._id } } 
     );
 
     res.status(200).json({ message: "Enrolled successfully" });
@@ -221,7 +216,6 @@ export const enrollInCourse = async (req, res) => {
 // Unenroll from course
 export const unenrollFromCourse = async (req, res) => {
   try {
-    // Get the student ID directly from req.user, which is populated by the auth middleware
     const studentId = req.user.id;  
 
     const course = await Course.findById(req.params.id);
@@ -233,13 +227,11 @@ export const unenrollFromCourse = async (req, res) => {
       return res.status(400).json({ message: "Not enrolled in this course" });
     }
 
-    // Remove the student from the enrolledStudents list in the course
     course.enrolledStudents = course.enrolledStudents.filter(
       (id) => id.toString() !== studentId
     );
     await course.save();
 
-    // Remove the course from the student's enrolledCourses list
     await User.findByIdAndUpdate(
       studentId,
       { $pull: { enrolledCourses: course._id } }
@@ -280,7 +272,7 @@ export const getEnrolledStudents = async (req, res) => {
 
 // Remove student from course (teacher)
 export const removeStudentFromCourse = async (req, res) => {
-  const { id } = req.params; // courseId
+  const { id } = req.params; 
   const { studentId } = req.body;
 
   await Course.findByIdAndUpdate(id, { $pull: { enrolledStudents: studentId } });
@@ -326,7 +318,7 @@ export const removeMaterial = async (req, res) => {
 
     // Optional: delete the file from disk
     if (material.filePath) {
-      const filePath = path.join(process.cwd(), material.filePath); // adjust as needed
+      const filePath = path.join(process.cwd(), material.filePath); 
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
@@ -418,10 +410,10 @@ export const createAssignment = async (req, res) => {
   }
 };
 
-// Upload material (slide links or URLs)
+// Upload material 
 export const uploadMaterial = async (req, res) => {
   const { id } = req.params;
-  const { material } = req.body; // e.g., slide URL
+  const { material } = req.body; 
   const course = await Course.findByIdAndUpdate(id, { $push: { materials: material } }, { new: true });
   res.json(course);
 };
@@ -436,7 +428,6 @@ export const downloadMaterial = async (req, res) => {
       return res.status(404).json({ message: 'Course not found' });
     }
 
-    // Check if user is either teacher or enrolled student
     const isTeacher = course.teacher.toString() === req.user.id;
     const isEnrolled = course.enrolledStudents.includes(req.user.id);
     
@@ -462,7 +453,6 @@ export const downloadMaterial = async (req, res) => {
     res.setHeader('Content-Type', material.mimeType || 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="${material.originalFileName}"`);
 
-    // Stream the file
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
   } catch (error) {

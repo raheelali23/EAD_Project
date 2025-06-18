@@ -6,7 +6,7 @@ import TeacherDashboard from "./pages/TeacherDashboard";
 import CourseDetail from "./pages/CourseDetail";
 import MyCourses from "./pages/MyCourses";
 import StudentDeadlines from "./pages/StudentDeadlines";
-import ViewCourse from "./pages/viewcourse";  // Correct import
+import ViewCourse from "./pages/viewcourse";  
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
         <Route path="/student-dashboard/my-courses" element={<MyCourses />} />
-        <Route path="/course/:id" element={<ViewCourse />} />  {/* Correct route definition */}
+        <Route path="/course/:id" element={<ViewCourse />} /> 
         <Route path="/student-dashboard/deadlines" element={<StudentDeadlines />} />
         <Route path="/teacher-dashboard/course/:id" element={<CourseDetail />} />
         <Route path="/student-dashboard/course/:id" element={<CourseDetail />} />

@@ -30,7 +30,6 @@ export default function Register() {
   return (
     <div style={styles.wrapper}>
       <div style={styles.card}>
-        {/* Left - Image */}
         <div style={styles.left}>
           <img
             src="/images/courses/login.jpg"
@@ -39,7 +38,6 @@ export default function Register() {
           />
         </div>
 
-        {/* Right - Form */}
         <div style={styles.right}>
           <h2 style={{ marginBottom: "1.5rem" }}>Create Account</h2>
           <form onSubmit={handleRegister} style={styles.form}>

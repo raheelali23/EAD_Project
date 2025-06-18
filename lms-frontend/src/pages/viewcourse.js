@@ -3,10 +3,10 @@ import { useParams, Link } from "react-router-dom";
 import { API_BASE } from "../config";
 
 export default function ViewCourse() {
-  const { id } = useParams();  // Get the course ID from the URL
+  const { id } = useParams();  
   const [course, setCourse] = useState(null);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState("home");  // Default tab is "home"
+  const [activeTab, setActiveTab] = useState("home"); 
 
   const token = localStorage.getItem("token");
 
@@ -57,10 +57,8 @@ export default function ViewCourse() {
         </div>
       </nav>
 
-      {/* Error Handling */}
       {error && <div className="alert alert-danger">{error}</div>}
 
-      {/* Tabs */}
       <div style={{ marginBottom: "20px" }}>
         <nav className="nav nav-pills bg-light rounded p-2 mb-4 shadow-sm">
           <Link to="#" onClick={() => setActiveTab("home")} style={getTabStyle("home")} className="nav-link">
@@ -78,8 +76,7 @@ export default function ViewCourse() {
         </nav>
       </div>
 
-      {/* Home Tab */}
-      {/* Home Tab */}
+    
 {activeTab === "home" && (
   <div>
     <h3>Materials</h3>
@@ -136,8 +133,6 @@ export default function ViewCourse() {
         </div>
       )}
 
-      {/* Participants Tab */}
-      {/* Participants Tab */}
 {activeTab === "participants" && (
   <div>
     <h3>Participants</h3>
@@ -169,8 +164,6 @@ export default function ViewCourse() {
 )}
 
 
-      {/* Info Tab */}
-      {/* Info Tab */}
 {activeTab === "info" && (
   <div>
     <h3 className="mb-4">📘 Course Info</h3>
@@ -224,7 +217,7 @@ const styles = {
     textDecoration: "none",
     padding: "10px 20px",
     borderRadius: "4px",
-    color: "#6c757d", // Default text color
+    color: "#6c757d",
     cursor: "pointer",
     transition: "background-color 0.2s ease",
   },

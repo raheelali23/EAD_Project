@@ -126,7 +126,7 @@ export default function Login() {
                 type="submit"
                 className="btn text-white rounded-pill"
                 style={{
-                  backgroundColor: 'black', // Green color as in the demo
+                  backgroundColor: 'black',
                   padding: '0.7rem 1.5rem',
                   fontWeight: 'bold',
                   width: '100%',
@@ -138,17 +138,13 @@ export default function Login() {
               </button>
             </form>
   
-            {/* <div className="text-left mt-2">
-              <Link to="/forgot-password" className="text-muted small">Forgot password?</Link>
-            </div> */}
-  
   <div className="text-left mt-3">
             <p className="mb-1 text-muted">Don’t have an account?</p>
             <Link to="/register">
               <button
                 className="btn rounded-pill text-white"
                 style={{
-                  backgroundColor: 'black', // Blue color for create button
+                  backgroundColor: 'black', 
                   padding: '0.6rem 1.2rem',
                   fontWeight: 'bold'
                 }}

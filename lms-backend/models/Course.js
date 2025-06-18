@@ -37,9 +37,7 @@ const courseSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-// Add indexes for better query performance
 courseSchema.index({ title: 'text', description: 'text' });
-courseSchema.index({ enrollmentKey: 1 });
 courseSchema.index({ teacher: 1 });
 courseSchema.index({ enrolledStudents: 1 });
 
