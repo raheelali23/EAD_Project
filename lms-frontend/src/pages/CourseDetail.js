@@ -14,6 +14,9 @@ export default function CourseDetail() {
   const [newMaterial, setNewMaterial] = useState({ title: '', description: '', type: 'document', file: null });
   const [newAssignment, setNewAssignment] = useState({ title: '', deadline: '', file: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [submissionsModal, setSubmissionsModal] = useState({ open: false, assignment: null, submissions: [] });
+  const [deadlineEdit, setDeadlineEdit] = useState({ open: false, assignment: null, newDeadline: '' });
+  const user = JSON.parse(localStorage.getItem('user'));
 
   const token = localStorage.getItem('token');
 
@@ -173,6 +176,60 @@ export default function CourseDetail() {
     }
   };
 
+  const fetchSubmissions = async (assignment) => {
+    try {
+      const res = await fetch(`${API_BASE}/courses/${id}/assignments/${assignment._id}/submissions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      setSubmissionsModal({ open: true, assignment, submissions: data });
+    } catch {
+      setSnackbar({ open: true, message: 'Failed to fetch submissions', severity: 'danger' });
+    }
+  };
+
+  const handleUpdateDeadline = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/courses/${id}/assignments/${deadlineEdit.assignment._id}/deadline`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ deadline: deadlineEdit.newDeadline })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      setCourse(prev => ({ ...prev, assignments: prev.assignments.map(a => a._id === deadlineEdit.assignment._id ? { ...a, deadline: deadlineEdit.newDeadline } : a) }));
+      setDeadlineEdit({ open: false, assignment: null, newDeadline: '' });
+      setSnackbar({ open: true, message: 'Deadline updated', severity: 'success' });
+    } catch (err) {
+      setSnackbar({ open: true, message: err.message, severity: 'danger' });
+    }
+  };
+
+  const handleSubmitAssignment = async (assignment, file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API_BASE}/courses/${id}/assignments/${assignment._id}/submit`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      
+      // Check if submission is late
+      const isLate = new Date() > new Date(assignment.deadline);
+      const message = isLate 
+        ? 'Assignment submitted! (Late submission)' 
+        : 'Assignment submitted!';
+      const severity = isLate ? 'warning' : 'success';
+      
+      setSnackbar({ open: true, message, severity });
+    } catch (err) {
+      setSnackbar({ open: true, message: err.message, severity: 'danger' });
+    }
+  };
+
   if (loading) return <div className="d-flex justify-content-center align-items-center vh-100 bg-white text-dark"><div className="spinner-border text-dark" /></div>;
   if (error) return <div className="alert alert-danger m-3">{error}</div>;
   if (!course) return <div className="alert alert-warning m-3">Course not found</div>;
@@ -258,10 +315,19 @@ export default function CourseDetail() {
       {tabValue === 'assignments' && (
         <div>
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h4 className="mb-0">Course Assignments</h4>
-            <button className="btn btn-primary shadow-sm" onClick={() => setOpenAssignmentModal(true)}>
-              <i className="bi bi-plus-circle me-1"></i> Add Assignment
-            </button>
+            <h4 className="mb-0">
+              <i className="bi bi-journal-text me-2"></i>
+              Course Assignments
+            </h4>
+            {user.role === 'teacher' && (
+              <button 
+                className="btn btn-primary shadow-sm rounded-pill px-4"
+                style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none' }}
+                onClick={() => setOpenAssignmentModal(true)}
+              >
+                <i className="bi bi-plus-circle me-1"></i> Add Assignment
+              </button>
+            )}
           </div>
 
           <div className="row">
@@ -270,30 +336,45 @@ export default function CourseDetail() {
               const statusColor = getStatusColor(timeRemaining.status);
               
               return (
-                <div className="col-md-4 mb-4" key={idx}>
-                  <div className="card h-100 shadow-sm border-0">
-                    <div className="card-body d-flex flex-column">
-                      <div className="d-flex align-items-center justify-content-center bg-light rounded mb-3" style={{ height: '150px' }}>
-                        <i className="bi bi-file-earmark-text" style={{ fontSize: '3rem' }}></i>
-                      </div>
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <h5 className="card-title mb-0">{assignment.title}</h5>
-                        <span className={`badge bg-${statusColor} text-white`}>
+                <div className="col-lg-4 col-md-6 mb-4" key={idx}>
+                  <div className="card h-100 border-0 shadow-lg">
+                    <div className="card-header bg-gradient-primary text-white border-0">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <h6 className="mb-0">
+                          <i className="bi bi-file-earmark-text me-2"></i>
+                          {assignment.title}
+                        </h6>
+                        <span className={`badge bg-${statusColor === 'danger' ? 'danger' : statusColor === 'warning' ? 'warning' : 'success'} text-white`}>
                           {timeRemaining.text}
                         </span>
                       </div>
+                    </div>
+                    
+                    <div className="card-body d-flex flex-column">
                       <div className="mb-3">
-                        <p className="card-text text-muted mb-1">
-                          <i className="bi bi-calendar-event me-1"></i>
-                          Deadline: {new Date(assignment.deadline).toLocaleString()}
-                        </p>
+                        <div className="d-flex align-items-center text-muted mb-2">
+                          <i className="bi bi-calendar-event me-2"></i>
+                          <small>
+                            <strong>Deadline:</strong> {new Date(assignment.deadline).toLocaleString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </small>
+                        </div>
+                        
                         {assignment.submissions?.length > 0 && (
-                          <p className="card-text text-muted mb-0">
-                            <i className="bi bi-people me-1"></i>
-                            {assignment.submissions.length} submission{assignment.submissions.length > 1 ? 's' : ''}
-                          </p>
+                          <div className="d-flex align-items-center text-muted">
+                            <i className="bi bi-people me-2"></i>
+                            <small>
+                              <strong>{assignment.submissions.length}</strong> submission{assignment.submissions.length > 1 ? 's' : ''}
+                            </small>
+                          </div>
                         )}
                       </div>
+                      
                       {assignment.fileUrl && (
                         <button 
                           onClick={async () => {
@@ -328,10 +409,72 @@ export default function CourseDetail() {
                               });
                             }
                           }}
-                          className="btn btn-outline-primary mt-auto"
+                          className="btn btn-outline-primary btn-sm mb-3"
                         >
                           <i className="bi bi-download me-1"></i> Download Assignment
                         </button>
+                      )}
+                      
+                      {/* Student submission UI */}
+                      {user.role === 'student' && (
+                        <div className="mt-auto">
+                          {assignment.submissions?.some(s => (s.student?._id || s.student) === user.id) ? (
+                            <div className="alert alert-success border-0 small">
+                              <i className="bi bi-check-circle me-1"></i>
+                              <strong>Submitted!</strong> You can resubmit if needed.
+                            </div>
+                          ) : (
+                            <div className="card bg-light border-0">
+                              <div className="card-body p-3">
+                                <h6 className="card-title small mb-2">
+                                  <i className="bi bi-upload me-1"></i>
+                                  Submit Your Work
+                                </h6>
+                                {timeRemaining.status === 'overdue' && (
+                                  <div className="alert alert-warning border-0 small mb-2">
+                                    <i className="bi bi-exclamation-triangle me-1"></i>
+                                    <strong>Overdue</strong> - You can still submit
+                                  </div>
+                                )}
+                                <input
+                                  type="file"
+                                  className="form-control form-control-sm mb-2"
+                                  accept=".pdf,.doc,.docx"
+                                  onChange={e => handleSubmitAssignment(assignment, e.target.files[0])}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Show submission timing for student */}
+                      {user.role === 'student' && assignment.submissions?.some(s => (s.student?._id || s.student) === user.id) && (
+                        <div className="alert alert-info border-0 small mt-2">
+                          {(() => {
+                            const sub = assignment.submissions.find(s => (s.student?._id || s.student) === user.id);
+                            if (sub && sub.submittedAt) {
+                              const deadline = new Date(assignment.deadline);
+                              const submittedAt = new Date(sub.submittedAt);
+                              const diffMs = submittedAt - deadline;
+                              const diffHrs = Math.round(Math.abs(diffMs) / 36e5 * 100) / 100;
+                              return diffMs < 0 ? `You submitted ${diffHrs} hours early` : `You submitted ${diffHrs} hours late`;
+                            }
+                            return null;
+                          })()}
+                        </div>
+                      )}
+                      
+                      {/* Teacher: view submissions and update deadline */}
+                      {user.role === 'teacher' && (
+                        <div className="mt-auto d-grid gap-2">
+                          <button className="btn btn-outline-primary btn-sm" onClick={() => fetchSubmissions(assignment)}>
+                            <i className="bi bi-list-check me-1"></i> View Submissions
+                          </button>
+                          <button className="btn btn-outline-warning btn-sm" onClick={() => setDeadlineEdit({ open: true, assignment, newDeadline: assignment.deadline.slice(0, 16) })}>
+                            <i className="bi bi-clock-history me-1"></i> Update Deadline
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -339,13 +482,207 @@ export default function CourseDetail() {
               );
             }) : (
               <div className="col-12">
-                <div className="alert alert-info">
-                  <i className="bi bi-info-circle me-2"></i>
-                  No assignments added yet
+                <div className="text-center py-5">
+                  <i className="bi bi-journal-x display-1 text-muted mb-3"></i>
+                  <h4 className="text-muted">No assignments yet</h4>
+                  <p className="text-muted">
+                    {user.role === 'teacher' 
+                      ? 'Create your first assignment to get started.' 
+                      : 'Check back later for new assignments.'
+                    }
+                  </p>
                 </div>
               </div>
             )}
           </div>
+          {/* Submissions Modal (teacher) */}
+          {submissionsModal.open && (
+            <div 
+              className="modal fade show d-block" 
+              tabIndex="-1" 
+              style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+              onClick={(e) => {
+                if (e.target.classList.contains('modal')) {
+                  setSubmissionsModal({ open: false, assignment: null, submissions: [] });
+                }
+              }}
+            >
+              <div className="modal-dialog modal-lg modal-dialog-centered">
+                <div className="modal-content border-0 shadow-lg rounded-4">
+                  <div className="modal-header bg-gradient-primary text-white rounded-top-4">
+                    <h5 className="modal-title">
+                      <i className="bi bi-list-check me-2"></i>
+                      Submissions for {submissionsModal.assignment.title}
+                    </h5>
+                    <button
+                      type="button"
+                      className="btn-close btn-close-white"
+                      onClick={() =>
+                        setSubmissionsModal({ open: false, assignment: null, submissions: [] })
+                      }
+                    ></button>
+                  </div>
+                  <div className="modal-body">
+                    {submissionsModal.submissions.length === 0 ? (
+                      <div className="text-center py-4">
+                        <i className="bi bi-inbox display-4 text-muted mb-3"></i>
+                        <h5 className="text-muted">No submissions yet</h5>
+                        <p className="text-muted">Students haven't submitted their work for this assignment.</p>
+                      </div>
+                    ) : (
+                      <div className="row">
+                        {submissionsModal.submissions.map((sub) => (
+                          <div key={sub._id} className="col-12 mb-3">
+                            <div className="card border-0 shadow-sm">
+                              <div className="card-body">
+                                <div className="d-flex justify-content-between align-items-start">
+                                  <div className="flex-grow-1">
+                                    <div className="d-flex align-items-center mb-2">
+                                      <div className="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3"
+                                        style={{ width: "40px", height: "40px", fontSize: "16px" }}>
+                                        {sub.student?.name?.charAt(0).toUpperCase() || "U"}
+                                      </div>
+                                      <div>
+                                        <h6 className="mb-0">{sub.student?.name || 'Unknown Student'}</h6>
+                                        <small className="text-muted">{sub.student?.email}</small>
+                                      </div>
+                                    </div>
+                                    <div className="ms-5">
+                                      <small className="text-muted">
+                                        <i className="bi bi-clock me-1"></i>
+                                        Submitted: {new Date(sub.submittedAt).toLocaleString()}
+                                      </small>
+                                      <br />
+                                      <small className="text-muted">
+                                        <i className="bi bi-info-circle me-1"></i>
+                                        {sub.timing}
+                                      </small>
+                                    </div>
+                                  </div>
+                                  <button
+                                    className="btn btn-primary btn-sm"
+                                    onClick={async () => {
+                                      try {
+                                        const response = await fetch(
+                                          `${API_BASE}/courses/${id}/assignments/${submissionsModal.assignment._id}/submissions/${sub._id}/download`,
+                                          {
+                                            headers: {
+                                              Authorization: `Bearer ${token}`,
+                                            },
+                                          }
+                                        );
+
+                                        if (!response.ok) {
+                                          throw new Error('Failed to download submission');
+                                        }
+
+                                        const blob = await response.blob();
+                                        const url = window.URL.createObjectURL(blob);
+                                        const link = document.createElement('a');
+
+                                        const extension = sub.submissionUrl?.split('.').pop() || 'pdf';
+                                        link.href = url;
+                                        link.download = `submission_${sub._id}.${extension}`;
+
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        window.URL.revokeObjectURL(url);
+                                      } catch (err) {
+                                        setSnackbar({
+                                          open: true,
+                                          message: 'Download failed: ' + err.message,
+                                          severity: 'danger',
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <i className="bi bi-download me-1"></i> Download
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Close button at bottom */}
+                    <div className="d-flex justify-content-end mt-4">
+                      <button 
+                        className="btn btn-secondary rounded-pill px-4"
+                        onClick={() => setSubmissionsModal({ open: false, assignment: null, submissions: [] })}
+                      >
+                        <i className="bi bi-x-circle me-1"></i>
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Deadline Edit Modal (teacher) */}
+          {deadlineEdit.open && (
+            <div 
+              className="modal fade show d-block" 
+              tabIndex="-1" 
+              style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+              onClick={(e) => {
+                if (e.target.classList.contains('modal')) {
+                  setDeadlineEdit({ open: false, assignment: null, newDeadline: '' });
+                }
+              }}
+            >
+              <div className="modal-dialog modal-dialog-centered">
+                <div className="modal-content border-0 shadow-lg rounded-4">
+                  <div className="modal-header bg-gradient-warning text-dark rounded-top-4">
+                    <h5 className="modal-title">
+                      <i className="bi bi-clock-history me-2"></i>
+                      Update Deadline
+                    </h5>
+                    <button type="button" className="btn-close" onClick={() => setDeadlineEdit({ open: false, assignment: null, newDeadline: '' })}></button>
+                  </div>
+                  <div className="modal-body">
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold">
+                        <i className="bi bi-calendar-event me-2"></i>
+                        New Deadline
+                      </label>
+                      <input 
+                        type="datetime-local" 
+                        className="form-control rounded-3 shadow-sm border-0" 
+                        value={deadlineEdit.newDeadline} 
+                        onChange={e => setDeadlineEdit({ ...deadlineEdit, newDeadline: e.target.value })} 
+                      />
+                      <small className="text-muted">
+                        <i className="bi bi-info-circle me-1"></i>
+                        Students can submit until this deadline, but late submissions are also accepted
+                      </small>
+                    </div>
+                    <div className="d-flex justify-content-end gap-2">
+                      <button 
+                        className="btn btn-outline-secondary rounded-pill px-4" 
+                        onClick={() => setDeadlineEdit({ open: false, assignment: null, newDeadline: '' })}
+                      >
+                        <i className="bi bi-x-circle me-1"></i>
+                        Cancel
+                      </button>
+                      <button 
+                        className="btn btn-warning rounded-pill px-4"
+                        style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', border: 'none' }}
+                        onClick={handleUpdateDeadline}
+                      >
+                        <i className="bi bi-check-circle me-1"></i>
+                        Update Deadline
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -441,8 +778,11 @@ export default function CourseDetail() {
         >
           <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div className="modal-content border-0 shadow-lg rounded-4">
-              <div className="modal-header bg-dark text-white rounded-top-4">
-                <h5 className="modal-title">Add New Assignment</h5>
+              <div className="modal-header bg-gradient-primary text-white rounded-top-4">
+                <h5 className="modal-title">
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Create New Assignment
+                </h5>
                 <button type="button" className="btn-close btn-close-white" onClick={() => setOpenAssignmentModal(false)}></button>
               </div>
               <div className="modal-body bg-light rounded-bottom-4">
@@ -450,33 +790,83 @@ export default function CourseDetail() {
                   e.preventDefault();
                   handleAddAssignment();
                 }}>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Assignment Title</label>
-                    <input type="text" className="form-control rounded-3 shadow-sm"
-                      value={newAssignment.title}
-                      onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
-                      required />
+                  <div className="row">
+                    <div className="col-md-8">
+                      <div className="mb-4">
+                        <label className="form-label fw-semibold text-dark">
+                          <i className="bi bi-file-earmark-text me-2"></i>
+                          Assignment Title
+                        </label>
+                        <input 
+                          type="text" 
+                          className="form-control rounded-3 shadow-sm border-0"
+                          placeholder="Enter assignment title..."
+                          value={newAssignment.title}
+                          onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                          required 
+                        />
+                      </div>
+                      
+                      <div className="mb-4">
+                        <label className="form-label fw-semibold text-dark">
+                          <i className="bi bi-calendar-event me-2"></i>
+                          Deadline
+                        </label>
+                        <input 
+                          type="datetime-local" 
+                          className="form-control rounded-3 shadow-sm border-0"
+                          value={newAssignment.deadline}
+                          onChange={(e) => setNewAssignment({ ...newAssignment, deadline: e.target.value })}
+                          required 
+                        />
+                        <small className="text-muted">
+                          <i className="bi bi-info-circle me-1"></i>
+                          Students can submit until this deadline, but late submissions are also accepted
+                        </small>
+                      </div>
+                    </div>
+                    
+                    <div className="col-md-4">
+                      <div className="card bg-white border-0 shadow-sm h-100">
+                        <div className="card-body">
+                          <h6 className="card-title text-dark mb-3">
+                            <i className="bi bi-upload me-2"></i>
+                            Assignment File
+                          </h6>
+                          <div className="mb-3">
+                            <input 
+                              type="file" 
+                              className="form-control form-control-sm rounded-3 shadow-sm border-0"
+                              accept=".pdf,.doc,.docx"
+                              onChange={(e) => setNewAssignment({ ...newAssignment, file: e.target.files[0] })}
+                              required 
+                            />
+                          </div>
+                          <div className="alert alert-info border-0 small">
+                            <i className="bi bi-lightbulb me-1"></i>
+                            <strong>Accepted formats:</strong> PDF, DOC, DOCX
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Deadline</label>
-                    <input type="datetime-local" className="form-control rounded-3 shadow-sm"
-                      value={newAssignment.deadline}
-                      onChange={(e) => setNewAssignment({ ...newAssignment, deadline: e.target.value })}
-                      required />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Assignment File (PDF/DOC)</label>
-                    <input type="file" className="form-control rounded-3 shadow-sm"
-                      accept=".pdf,.doc,.docx"
-                      onChange={(e) => setNewAssignment({ ...newAssignment, file: e.target.files[0] })}
-                      required />
-                  </div>
-                  <div className="d-flex justify-content-end">
-                    <button type="submit" className="btn btn-dark me-2">
-                      <i className="bi bi-cloud-upload me-1"></i> Upload Assignment
-                    </button>
-                    <button type="button" className="btn btn-outline-secondary" onClick={() => setOpenAssignmentModal(false)}>
+                  
+                  <div className="d-flex justify-content-end gap-2 mt-4">
+                    <button 
+                      type="button" 
+                      className="btn btn-outline-secondary rounded-pill px-4" 
+                      onClick={() => setOpenAssignmentModal(false)}
+                    >
+                      <i className="bi bi-x-circle me-1"></i>
                       Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary rounded-pill px-4"
+                      style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none' }}
+                    >
+                      <i className="bi bi-plus-circle me-1"></i>
+                      Create Assignment
                     </button>
                   </div>
                 </form>

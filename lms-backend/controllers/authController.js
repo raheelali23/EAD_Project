@@ -22,10 +22,10 @@ const registerUser = async (req, res) => {
 };
 
 const loginUser = async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email, role });
+    const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(password, user.password);
@@ -35,7 +35,7 @@ const loginUser = async (req, res) => {
       expiresIn: "1d"
     });
 
-    res.json({ token, user: { id: user._id, name: user.name, role: user.role } });
+    res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });

@@ -36,3 +36,113 @@
     transform: rotate(360deg);
   }
 }
+
+/* Custom gradient backgrounds */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.bg-gradient-warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.bg-gradient-danger {
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+}
+
+.bg-gradient-info {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+/* Enhanced card shadows */
+.card {
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+/* Custom button styles */
+.btn {
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Form control enhancements */
+.form-control {
+  border-radius: 8px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Badge enhancements */
+.badge {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+/* Modal enhancements */
+.modal-content {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.modal-header {
+  border-bottom: none;
+  padding: 1.5rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+/* Alert enhancements */
+.alert {
+  border-radius: 12px;
+  border: none;
+  padding: 1rem 1.25rem;
+}
+
+/* Navigation enhancements */
+.nav-link {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  transform: translateY(-1px);
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}

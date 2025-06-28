@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { API_BASE } from '../config';
 
@@ -6,21 +6,11 @@ import { API_BASE } from '../config';
 export default function Login() {
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
-    role: 'student'
+    password: ''
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    if (token && userStr) {
-      const user = JSON.parse(userStr);
-      navigate(user.role === 'teacher' ? '/teacher-dashboard' : '/student-dashboard');
-    }
-  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -108,19 +98,6 @@ export default function Login() {
                 style={{ outline: 'none', padding: '0.5rem 0' }}
               />
             </div>
-
-            <div className="mb-3">
-              <select
-                className="form-select border-0 border-bottom rounded-0"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                style={{ outline: 'none', padding: '0.5rem 0' }}
-                >
-                  <option value="student">Student</option>
-                  <option value="teacher">Teacher</option>
-                </select>
-              </div>
   
               <button
                 type="submit"
@@ -139,7 +116,7 @@ export default function Login() {
             </form>
   
   <div className="text-left mt-3">
-            <p className="mb-1 text-muted">Don’t have an account?</p>
+            <p className="mb-1 text-muted">Don't have an account?</p>
             <Link to="/register">
               <button
                 className="btn rounded-pill text-white"

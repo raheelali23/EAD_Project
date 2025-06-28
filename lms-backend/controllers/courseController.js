@@ -10,54 +10,55 @@ const __dirname = path.dirname(__filename);
 // Get submissions for an assignment
 export const getSubmissions = async (req, res) => {
   try {
-  const { courseId, assignmentTitle } = req.params;
-
-    const course = await Course.findById(courseId)
-      .populate("assignments.submissions.student", "name email");
-    
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-
-  const assignment = course.assignments.find(a => a.title === assignmentTitle);
-    if (!assignment) {
-      return res.status(404).json({ message: "Assignment not found" });
-    }
-
-  res.json(assignment.submissions);
+    const { id, assignmentId } = req.params;
+    const course = await Course.findById(id).populate('assignments.submissions.student', 'name email');
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+    if (course.teacher.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized' });
+    const assignment = course.assignments.id(assignmentId);
+    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    // Calculate early/late for each submission
+    const deadline = new Date(assignment.deadline);
+    const submissions = assignment.submissions.map(sub => {
+      const submittedAt = new Date(sub.submittedAt);
+      const diffMs = submittedAt - deadline;
+      const diffHrs = Math.round(Math.abs(diffMs) / 36e5 * 100) / 100;
+      return {
+        ...sub.toObject(),
+        timing: diffMs < 0 ? `${diffHrs} hours early` : `${diffHrs} hours late`
+      };
+    });
+    res.json(submissions);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Submit assignment
+// Submit assignment (with file upload)
 export const submitAssignment = async (req, res) => {
   try {
-  const { courseId } = req.params;
-  const { studentId, assignmentTitle, submissionUrl } = req.body;
-
-  const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
+    const { id, assignmentId } = req.params;
+    const studentId = req.user.id;
+    const course = await Course.findById(id);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+    const assignment = course.assignments.id(assignmentId);
+    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    if (!course.enrolledStudents.includes(studentId)) return res.status(403).json({ message: 'Student is not enrolled in this course' });
+    
+    // Remove previous submission if exists (allow resubmission)
+    assignment.submissions = assignment.submissions.filter(s => s.student.toString() !== studentId);
+    let submissionUrl = null;
+    if (req.file) {
+      submissionUrl = `/uploads/${req.file.filename}`;
+    } else if (req.body.submissionUrl) {
+      submissionUrl = req.body.submissionUrl;
     }
-
-  const assignment = course.assignments.find(a => a.title === assignmentTitle);
-    if (!assignment) {
-      return res.status(404).json({ message: "Assignment not found" });
-    }
-
-    if (!course.enrolledStudents.includes(studentId)) {
-      return res.status(403).json({ message: "Student is not enrolled in this course" });
-    }
-
-  assignment.submissions.push({
-    student: studentId,
-    submissionUrl,
-    submittedAt: new Date()
-  });
-
-  await course.save();
-    res.json({ message: "Submission saved successfully" });
+    assignment.submissions.push({
+      student: studentId,
+      submissionUrl,
+      submittedAt: new Date()
+    });
+    await course.save();
+    res.json({ message: 'Submission saved successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -492,6 +493,82 @@ export const downloadAssignment = async (req, res) => {
     
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const downloadSubmission = async (req, res) => {
+  try {
+    const { id, assignmentId, submissionId } = req.params;
+
+    const course = await Course.findById(id);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+
+    const assignment = course.assignments.id(assignmentId);
+    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+
+    const submission = assignment.submissions.id(submissionId);
+    if (!submission) return res.status(404).json({ message: 'Submission not found' });
+
+    const isTeacher = course.teacher.toString() === req.user.id;
+    const isOwnSubmission = submission.student.toString() === req.user.id;
+    if (!isTeacher && !isOwnSubmission) {
+      return res.status(403).json({ message: 'Not authorized to download this submission' });
+    }
+
+    if (!submission.submissionUrl) {
+      return res.status(404).json({ message: 'No file attached to this submission' });
+    }
+
+    const fileName = path.basename(submission.submissionUrl); // just the filename
+    const filePath = path.join(process.cwd(), 'uploads', fileName); // ensure it points to /uploads
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: 'File not found on server' });
+    }
+
+    res.download(filePath, `submission_${submissionId}${path.extname(fileName)}`);
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+// Update assignment deadline (teacher only, future dates only)
+export const updateAssignmentDeadline = async (req, res) => {
+  try {
+    const { id, assignmentId } = req.params;
+    const { deadline } = req.body;
+    const course = await Course.findById(id);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+    if (course.teacher.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized' });
+    const assignment = course.assignments.id(assignmentId);
+    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    if (new Date(deadline) < new Date()) return res.status(400).json({ message: 'Deadline must be a future date/time' });
+    assignment.deadline = deadline;
+    await course.save();
+    res.json({ message: 'Deadline updated', deadline });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete submission (student only)
+export const deleteSubmission = async (req, res) => {
+  try {
+    const { id, assignmentId } = req.params;
+    const studentId = req.user.id;
+    const course = await Course.findById(id);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+    const assignment = course.assignments.id(assignmentId);
+    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    const initialLength = assignment.submissions.length;
+    assignment.submissions = assignment.submissions.filter(s => s.student.toString() !== studentId);
+    if (assignment.submissions.length === initialLength) {
+      return res.status(404).json({ message: 'Submission not found' });
+    }
+    await course.save();
+    res.json({ message: 'Submission deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

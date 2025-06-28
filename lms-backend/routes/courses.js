@@ -14,7 +14,12 @@ import {
   downloadAssignment,
   searchCourses,
   removeMaterial,
-  getStudentCourses
+  getStudentCourses,
+  submitAssignment,
+  getSubmissions,
+  downloadSubmission,
+  updateAssignmentDeadline,
+  deleteSubmission
 } from '../controllers/courseController.js';
 
 const router = express.Router();
@@ -39,5 +44,14 @@ router.post('/:id/unenroll', auth, unenrollFromCourse);
 router.post('/:id/materials', auth, upload.single('file'), addMaterial);
 router.post('/:id/assignments', auth, upload.single('file'), createAssignment);
 router.get('/:id/assignments/:assignmentId/download', auth, downloadAssignment);
+
+// Assignment submission routes
+router.post('/:id/assignments/:assignmentId/submit', auth, upload.single('file'), submitAssignment);
+router.get('/:id/assignments/:assignmentId/submissions', auth, getSubmissions);
+router.get('/:id/assignments/:assignmentId/submissions/:submissionId/download', auth, downloadSubmission);
+router.delete('/:id/assignments/:assignmentId/submit', auth, deleteSubmission);
+
+// Assignment deadline routes
+router.put('/:id/assignments/:assignmentId/deadline', auth, updateAssignmentDeadline);
 
 export default router; 
