@@ -49,14 +49,14 @@ export default function Login() {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center' }}>
+    <div style={{ display: 'flex', height: '100vh', backgroundColor: '#363535', justifyContent: 'center', alignItems: 'center' }}>
       <div style={{ display: 'flex', maxWidth: '900px', width: '100%', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }}>
         {/* Left Side - Image and Black Background */}
         {/* <div style={{ flex: 1, backgroundColor: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <img src={loginImage} alt="Login Illustration" style={{ maxWidth: '80%', maxHeight: '80%', objectFit: 'contain' }} />
         </div> */}
 <div style={{ flex: 1, backgroundColor: 'black', overflow: 'hidden' }}>
-  <img src={`/images/courses/login.jpg`} alt="Login Illustration" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+  <img src={`/images/courses/Hello.png`} alt="Login Illustration" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
 </div>
 
         {/* Right Side - Login Form */}
