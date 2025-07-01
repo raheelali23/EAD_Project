@@ -90,7 +90,7 @@ export default function Register() {
           transition={{ delay: 0.4, duration: 0.8 }}
         >
           <img
-            src="/images/courses/login.jpg"
+            src="/images/courses/register.png"
             alt="Register Illustration"
             style={styles.image}
           />
@@ -220,7 +220,7 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f2f4f8",
+    backgroundColor: "#363535",
     padding: "20px",
   },
   card: {
