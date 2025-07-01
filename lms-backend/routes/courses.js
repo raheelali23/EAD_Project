@@ -19,7 +19,8 @@ import {
   getSubmissions,
   downloadSubmission,
   updateAssignmentDeadline,
-  deleteSubmission
+  deleteSubmission,
+  deleteAssignment
 } from '../controllers/courseController.js';
 
 const router = express.Router();
@@ -44,6 +45,7 @@ router.post('/:id/unenroll', auth, unenrollFromCourse);
 router.post('/:id/materials', auth, upload.single('file'), addMaterial);
 router.post('/:id/assignments', auth, upload.single('file'), createAssignment);
 router.get('/:id/assignments/:assignmentId/download', auth, downloadAssignment);
+router.delete('/:id/assignments/:assignmentId', auth, deleteAssignment);
 
 // Assignment submission routes
 router.post('/:id/assignments/:assignmentId/submit', auth, upload.single('file'), submitAssignment);

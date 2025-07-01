@@ -405,7 +405,9 @@ export const createAssignment = async (req, res) => {
     course.assignments.push(assignment);
     await course.save();
     
-    res.status(201).json(assignment);
+    // Return the saved assignment with _id from the course
+    const savedAssignment = course.assignments[course.assignments.length - 1];
+    res.status(201).json(savedAssignment);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -562,13 +564,61 @@ export const deleteSubmission = async (req, res) => {
     if (!course) return res.status(404).json({ message: 'Course not found' });
     const assignment = course.assignments.id(assignmentId);
     if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
-    const initialLength = assignment.submissions.length;
-    assignment.submissions = assignment.submissions.filter(s => s.student.toString() !== studentId);
-    if (assignment.submissions.length === initialLength) {
+    // Find the submission to delete
+    const submission = assignment.submissions.find(s => s.student.toString() === studentId);
+    if (!submission) {
       return res.status(404).json({ message: 'Submission not found' });
     }
+    // Delete the file from disk if it exists
+    if (submission.submissionUrl) {
+      const fileName = path.basename(submission.submissionUrl);
+      const filePath = path.join(process.cwd(), 'uploads', fileName);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+    // Remove the submission from the array
+    assignment.submissions = assignment.submissions.filter(s => s.student.toString() !== studentId);
     await course.save();
     res.json({ message: 'Submission deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Delete assignment (teacher only)
+export const deleteAssignment = async (req, res) => {
+  try {
+    const { id, assignmentId } = req.params;
+    const course = await Course.findById(id);
+    if (!course) return res.status(404).json({ message: 'Course not found' });
+    if (course.teacher.toString() !== req.user.id) return res.status(403).json({ message: 'Not authorized' });
+    const assignment = course.assignments.id(assignmentId);
+    if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+    // Delete assignment file if exists
+    if (assignment.fileUrl) {
+      const fileName = path.basename(assignment.fileUrl);
+      const filePath = path.join(process.cwd(), 'uploads', fileName);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+    // Delete all submission files for this assignment
+    if (assignment.submissions && assignment.submissions.length > 0) {
+      assignment.submissions.forEach(sub => {
+        if (sub.submissionUrl) {
+          const fileName = path.basename(sub.submissionUrl);
+          const filePath = path.join(process.cwd(), 'uploads', fileName);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          }
+        }
+      });
+    }
+    // Remove the assignment from the array
+    course.assignments = course.assignments.filter(a => a._id.toString() !== assignmentId);
+    await course.save();
+    res.json({ message: 'Assignment deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

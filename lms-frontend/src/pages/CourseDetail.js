@@ -178,18 +178,24 @@ export default function CourseDetail() {
 
   const fetchSubmissions = async (assignment) => {
     try {
+      if (!assignment._id) {
+        throw new Error('Assignment ID not found. Please refresh the page and try again.');
+      }
       const res = await fetch(`${API_BASE}/courses/${id}/assignments/${assignment._id}/submissions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
       setSubmissionsModal({ open: true, assignment, submissions: data });
-    } catch {
-      setSnackbar({ open: true, message: 'Failed to fetch submissions', severity: 'danger' });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message || 'Failed to fetch submissions', severity: 'danger' });
     }
   };
 
   const handleUpdateDeadline = async () => {
     try {
+      if (!deadlineEdit.assignment._id) {
+        throw new Error('Assignment ID not found. Please refresh the page and try again.');
+      }
       const res = await fetch(`${API_BASE}/courses/${id}/assignments/${deadlineEdit.assignment._id}/deadline`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -200,13 +206,16 @@ export default function CourseDetail() {
       setCourse(prev => ({ ...prev, assignments: prev.assignments.map(a => a._id === deadlineEdit.assignment._id ? { ...a, deadline: deadlineEdit.newDeadline } : a) }));
       setDeadlineEdit({ open: false, assignment: null, newDeadline: '' });
       setSnackbar({ open: true, message: 'Deadline updated', severity: 'success' });
-    } catch (err) {
-      setSnackbar({ open: true, message: err.message, severity: 'danger' });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message || 'Failed to update deadline', severity: 'danger' });
     }
   };
 
   const handleSubmitAssignment = async (assignment, file) => {
     try {
+      if (!assignment._id) {
+        throw new Error('Assignment ID not found. Please refresh the page and try again.');
+      }
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch(`${API_BASE}/courses/${id}/assignments/${assignment._id}/submit`, {
@@ -225,8 +234,33 @@ export default function CourseDetail() {
       const severity = isLate ? 'warning' : 'success';
       
       setSnackbar({ open: true, message, severity });
-    } catch (err) {
-      setSnackbar({ open: true, message: err.message, severity: 'danger' });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message || 'Failed to submit assignment', severity: 'danger' });
+    }
+  };
+
+  const handleDeleteAssignment = async (assignmentId) => {
+    try {
+      const res = await fetch(`${API_BASE}/courses/${id}/assignments/${assignmentId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Failed to delete assignment");
+      }
+  
+      setCourse((prev) => ({
+        ...prev,
+        assignments: prev.assignments.filter((a) => a._id !== assignmentId),
+      }));
+  
+      setSnackbar({ open: true, message: "Assignment deleted successfully!", severity: "success" });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: "danger" });
     }
   };
 
@@ -379,6 +413,9 @@ export default function CourseDetail() {
                         <button 
                           onClick={async () => {
                             try {
+                              if (!assignment._id) {
+                                throw new Error('Assignment ID not found. Please refresh the page and try again.');
+                              }
                               const downloadUrl = `${API_BASE}/courses/${id}/assignments/${assignment._id}/download`;
                               const response = await fetch(downloadUrl, {
                                 headers: {
@@ -404,7 +441,7 @@ export default function CourseDetail() {
                             } catch (error) {
                               setSnackbar({
                                 open: true,
-                                message: 'Failed to download file. Please try again.',
+                                message: error.message || 'Failed to download file. Please try again.',
                                 severity: 'danger'
                               });
                             }
@@ -473,6 +510,9 @@ export default function CourseDetail() {
                           </button>
                           <button className="btn btn-outline-warning btn-sm" onClick={() => setDeadlineEdit({ open: true, assignment, newDeadline: assignment.deadline.slice(0, 16) })}>
                             <i className="bi bi-clock-history me-1"></i> Update Deadline
+                          </button>
+                          <button className="btn btn-outline-danger btn-sm" onClick={() => handleDeleteAssignment(assignment._id)}>
+                            <i className="bi bi-trash me-1"></i> Delete Assignment
                           </button>
                         </div>
                       )}
@@ -563,6 +603,9 @@ export default function CourseDetail() {
                                     className="btn btn-primary btn-sm"
                                     onClick={async () => {
                                       try {
+                                        if (!submissionsModal.assignment._id) {
+                                          throw new Error('Assignment ID not found. Please refresh the page and try again.');
+                                        }
                                         const response = await fetch(
                                           `${API_BASE}/courses/${id}/assignments/${submissionsModal.assignment._id}/submissions/${sub._id}/download`,
                                           {
@@ -588,10 +631,10 @@ export default function CourseDetail() {
                                         link.click();
                                         document.body.removeChild(link);
                                         window.URL.revokeObjectURL(url);
-                                      } catch (err) {
+                                      } catch (error) {
                                         setSnackbar({
                                           open: true,
-                                          message: 'Download failed: ' + err.message,
+                                          message: 'Download failed: ' + (error.message || 'Unknown error'),
                                           severity: 'danger',
                                         });
                                       }

@@ -11,6 +11,7 @@ export default function ViewCourse() {
   const [submittingAssignmentId, setSubmittingAssignmentId] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [confirmDelete, setConfirmDelete] = useState({ open: false, assignmentId: null });
+  const [submissionsModal, setSubmissionsModal] = useState({ open: false, assignment: null, submissions: [] });
 
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user"));
@@ -144,6 +145,26 @@ export default function ViewCourse() {
     }
   };
 
+  const handleDownloadAssignment = async (assignmentId, title) => {
+    try {
+      const response = await fetch(`${API_BASE}/courses/${id}/assignments/${assignmentId}/download`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error('Failed to download assignment');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title || 'assignment'}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: 'danger' });
+    }
+  };
+
   const getTimeRemaining = (deadline) => {
     const now = new Date();
     const deadlineDate = new Date(deadline);
@@ -153,6 +174,28 @@ export default function ViewCourse() {
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     return days > 0 ? `${days} day(s)` : `${hours} hour(s)`;
+  };
+
+  const handleDeleteAssignment = async (assignmentId) => {
+    try {
+      const res = await fetch(`${API_BASE}/courses/${id}/assignments/${assignmentId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Failed to delete assignment");
+      }
+      setCourse((prev) => ({
+        ...prev,
+        assignments: prev.assignments.filter((a) => a._id !== assignmentId),
+      }));
+      setSnackbar({ open: true, message: "Assignment deleted successfully!", severity: "success" });
+    } catch (error) {
+      setSnackbar({ open: true, message: error.message, severity: "danger" });
+    }
   };
 
   if (error) return <div className="alert alert-danger">{error}</div>;
@@ -216,7 +259,7 @@ export default function ViewCourse() {
                     <div className="card-footer bg-white border-top-0">
                       {m.filePath && (
                         <a
-                          href={`http://localhost:5000/uploads/${m.filePath.split("/").pop()}`}
+                          href={`${API_BASE}/uploads/${m.filePath.split("/").pop()}`}
                           download
                           className="btn btn-sm btn-outline-primary"
                         >
@@ -281,13 +324,12 @@ export default function ViewCourse() {
                         
                         {a.fileUrl && (
                           <div className="mb-2">
-                            <a
-                              href={`http://localhost:5000/uploads/${a.fileUrl.split("/").pop()}`}
-                              download
-                              className="btn btn-outline-primary btn-sm"
+                            <button
+                              className="btn btn-outline-primary btn-sm ms-2"
+                              onClick={() => handleDownloadAssignment(a._id, a.title)}
                             >
-                              Download Assignment
-                            </a>
+                              <i className="bi bi-download me-1"></i> Download Assignment
+                            </button>
                           </div>
                         )}
 
@@ -366,6 +408,24 @@ export default function ViewCourse() {
                               )}
                             </div>
                           </div>
+                        )}
+
+                        {user.role === 'teacher' && (
+                          <button
+                            className="btn btn-outline-danger btn-sm ms-2"
+                            onClick={() => handleDeleteAssignment(a._id)}
+                          >
+                            <i className="bi bi-trash me-1"></i> Delete Assignment
+                          </button>
+                        )}
+
+                        {user.role === 'teacher' && (
+                          <button
+                            className="btn btn-outline-primary btn-sm ms-2"
+                            onClick={() => setSubmissionsModal({ open: true, assignment: a, submissions: a.submissions || [] })}
+                          >
+                            <i className="bi bi-list-check me-1"></i> View Submissions
+                          </button>
                         )}
                       </div>
                     </div>
@@ -474,6 +534,81 @@ export default function ViewCourse() {
               <p className="card-text text-muted" style={{ whiteSpace: "pre-line" }}>
                 {course.description || "No description provided."}
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {submissionsModal.open && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg rounded-4">
+              <div className="modal-header bg-gradient-primary text-white rounded-top-4">
+                <h5 className="modal-title">
+                  <i className="bi bi-list-check me-2"></i>
+                  Submissions for {submissionsModal.assignment.title}
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setSubmissionsModal({ open: false, assignment: null, submissions: [] })}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {submissionsModal.submissions.length === 0 ? (
+                  <div className="text-center py-4">
+                    <i className="bi bi-inbox display-4 text-muted mb-3"></i>
+                    <h5 className="text-muted">No submissions yet</h5>
+                    <p className="text-muted">Students haven't submitted their work for this assignment.</p>
+                  </div>
+                ) : (
+                  <div className="row">
+                    {submissionsModal.submissions.map((sub) => (
+                      <div key={sub._id} className="col-12 mb-3">
+                        <div className="card border-0 shadow-sm">
+                          <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div className="flex-grow-1">
+                                <div className="d-flex align-items-center mb-2">
+                                  <div className="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center me-3"
+                                    style={{ width: "40px", height: "40px", fontSize: "16px" }}>
+                                    {sub.student?.name?.charAt(0).toUpperCase() || "U"}
+                                  </div>
+                                  <div>
+                                    <h6 className="mb-0">{sub.student?.name || 'Unknown Student'}</h6>
+                                    <small className="text-muted">{sub.student?.email}</small>
+                                  </div>
+                                </div>
+                                <div className="ms-5">
+                                  <small className="text-muted">
+                                    <i className="bi bi-clock me-1"></i>
+                                    Submitted: {new Date(sub.submittedAt).toLocaleString()}
+                                  </small>
+                                </div>
+                              </div>
+                              <button
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleDownloadSubmission(submissionsModal.assignment._id, sub._id)}
+                              >
+                                <i className="bi bi-download me-1"></i> Download
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="d-flex justify-content-end mt-4">
+                  <button 
+                    className="btn btn-secondary rounded-pill px-4"
+                    onClick={() => setSubmissionsModal({ open: false, assignment: null, submissions: [] })}
+                  >
+                    <i className="bi bi-x-circle me-1"></i>
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
