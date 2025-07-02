@@ -20,12 +20,19 @@ export default function StudentDeadlines() {
         const allDeadlines = [];
         courses.forEach((course) => {
           course.assignments?.forEach((a) => {
-            allDeadlines.push({
-              courseTitle: course.title,
-              assignmentTitle: a.title,
-              deadline: new Date(a.deadline),
-              fileUrl: a.fileUrl,
-            });
+            // Only include assignments NOT submitted by this student
+            const submitted = a.submissions && a.submissions.some(
+              (s) => (s.student?._id || s.student) === user.id
+            );
+            if (!submitted) {
+              allDeadlines.push({
+                courseId: course._id,
+                assignmentId: a._id,
+                courseTitle: course.title,
+                assignmentTitle: a.title,
+                deadline: new Date(a.deadline),
+              });
+            }
           });
         });
 
@@ -59,7 +66,14 @@ export default function StudentDeadlines() {
         ) : (
           <ul style={styles.list}>
             {deadlines.map((item, i) => (
-              <li key={i} style={styles.item}>
+              <li
+                key={i}
+                style={styles.item}
+                onClick={() => navigate(`/course/${item.courseId}`)}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => { if (e.key === 'Enter') navigate(`/course/${item.courseId}`); }}
+              >
                 <div style={styles.itemHeader}>
                   <strong style={styles.assignmentTitle}>{item.assignmentTitle}</strong>
                   <em style={styles.courseTitle}>— {item.courseTitle}</em>
@@ -68,15 +82,6 @@ export default function StudentDeadlines() {
                   <MdOutlineAccessTime style={styles.blackIcon} />
                   <span>Deadline: {item.deadline.toLocaleString()}</span>
                 </div>
-                {item.fileUrl && (
-                  <div style={styles.downloadInfo}>
-                    <MdDownload style={styles.blackIcon} />
-                    <span>File: </span>
-                    <a href={item.fileUrl} target="_blank" rel="noreferrer" style={styles.downloadLink}>
-                      Download
-                    </a>
-                  </div>
-                )}
               </li>
             ))}
           </ul>
