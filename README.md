@@ -1,5 +1,5 @@
 Group Members For EAD Project :
-Muskan Jarwar   023-22-0185
+Muskan   023-22-0185
 Muzammil Fatima 023-22-0296
 Raheel Ali      023-22-0024
 
