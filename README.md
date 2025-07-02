@@ -9,7 +9,7 @@ Features
 •	JWT-based authentication
 •	Teacher & student dashboards
 •	Course creation, editing, deletion (teacher)
-•	Enrollment with or without enrollment key
+•	Enrollment with  enrollment key
 •	Upload and manage course materials
 •	Create and manage assignments with deadlines
 •	Track and view student submissions
@@ -49,7 +49,7 @@ npm i nodemon
 
 # Terminal 1: Run backend
 cd lms-backend
-npm start
+node server.js 
 
 # Terminal 2: Run frontend
 cd lms-frontend
