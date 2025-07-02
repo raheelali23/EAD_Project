@@ -5,6 +5,9 @@ Raheel Ali      023-22-0024
 
 MERN Learning Management System (LMS)
 A full-featured Learning Management System (LMS) built with the MERN stack (MongoDB, Express.js, React, Node.js). It allows teachers to create and manage courses, upload materials, and handle student assignments — while students can enroll in courses, access materials, and submit assignments.
+
+![Alt text](https://raw.githubusercontent.com/raheelali23/EAD_Project/refs/heads/main/Screenshot%202025-07-01%20203748.png?raw=true)
+
 Features
 •	JWT-based authentication
 •	Teacher & student dashboards
