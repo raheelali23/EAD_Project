@@ -40,9 +40,6 @@ mern-lms/
 ├── client/ # React frontend
 └── server/ # Express + Node.js backend (API + MongoDB models)
 
-yaml
-Copy
-Edit
 
 ---
 
@@ -53,32 +50,32 @@ Edit
 ```bash
 git clone https://github.com/raheelali23/EAD_Project.git
 cd EAD_Project
+
+
 2. Install Server Dependencies
-bash
-Copy
-Edit
+
 cd lms-backend
 npm install
+
+
 3. Install Client Dependencies
-bash
-Copy
-Edit
+
 cd ../lms-frontend
 npm install
 npm i mongoose express cors react-router-dom react-icons bootstrap bootstrap-icons dotenv jsonwebtoken multer nodemon
 4. Run the Application
 Terminal 1: Run Backend
-bash
-Copy
-Edit
+
 cd lms-backend
 node server.js
+
+
 Terminal 2: Run Frontend
-bash
-Copy
-Edit
+
 cd lms-frontend
 npm start
+
+
 React client: http://localhost:3000
 
 API server: http://localhost:5000/api
